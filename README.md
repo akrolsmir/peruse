@@ -1,36 +1,16 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Notes
 
-## Getting Started
+Example URL: https://api.substack.com/feed/podcast/187852154/cecdbe38125e2786cbfebe31dd083d4f.mp3 (dwarkesh podcast)
 
-First, run the development server:
+## How it works
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+When you submit a URL on `/upload`:
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
-
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
-
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
-
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+1. **Create episode** — a Convex mutation inserts a new episode record with status `pending` and a URL-safe slug
+2. **POST `/api/process`** — the client fires off the processing pipeline and redirects home. The pipeline runs async in the API route:
+   - **Validate** (`lib/audio.ts`) — checks the URL has an audio extension or `audio/*` content-type via HEAD request. Sets status to `downloading`.
+   - **Transcribe** (`lib/transcribe.ts`) — sends the audio URL to Replicate's `nvidia/canary-qwen-2.5b` model, which returns timestamped text segments like `[0:00:00 - 0:00:40] Text...`. The parser splits these into `{start, end, text}` objects. Sets status to `transcribing`.
+   - **Post-process** (`lib/postprocess.ts`) — sends raw segments to Claude Sonnet 4.6 in ~15-minute chunks. Claude cleans filler words, fixes recognition errors, and groups sentences into paragraphs with timestamps. A second call generates a summary and chapter list. Sets status to `processing`.
+   - **Store** — writes the transcript, summary, and chapters back to Convex as JSON strings. Sets status to `done`.
+3. **Live updates** — the homepage and episode page use Convex's `useQuery`, which subscribes to real-time changes. Status badges update automatically as the pipeline progresses.
+4. **Playback** — on `/ep/[slug]`, the audio player, chapters, and transcript are wired together. Clicking a timestamp or chapter seeks the `<audio>` element via a forwarded ref. The transcript highlights the current paragraph based on playback time.

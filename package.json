@@ -3,7 +3,10 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev",
+    "dev": "concurrently -n next,convex -c cyan,magenta \"next dev\" \"convex dev\" 2>&1 | tee .dev.log",
+    "dev:peek": "tail -f .dev.log",
+    "dev:next": "next dev",
+    "dev:convex": "convex dev",
     "build": "next build",
     "start": "next start"
   },
@@ -20,6 +23,7 @@
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "concurrently": "^9.2.1",
     "tailwindcss": "^4",
     "typescript": "^5"
   },

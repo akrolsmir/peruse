@@ -10,6 +10,19 @@ export interface ASRProvider {
   transcribe(audioUrl: string): Promise<TranscriptSegment[]>;
 }
 
+const MODEL_VERSION =
+  "vaibhavs10/incredibly-fast-whisper:3ab86df6c8f54c11309d4d1f930ac292bad43ace52d10c80d87eb258b3c9f79c";
+
+interface WhisperChunk {
+  text: string;
+  timestamp: [number, number];
+}
+
+interface WhisperOutput {
+  text: string;
+  chunks: WhisperChunk[];
+}
+
 export class ReplicateASR implements ASRProvider {
   private client: Replicate;
 
@@ -18,43 +31,26 @@ export class ReplicateASR implements ASRProvider {
   }
 
   async transcribe(audioUrl: string): Promise<TranscriptSegment[]> {
-    const output = await this.client.run("nvidia/canary-qwen-2.5b", {
+    const output = (await this.client.run(MODEL_VERSION, {
       input: {
         audio: audioUrl,
+        task: "transcribe",
+        batch_size: 24,
+        return_timestamps: true,
       },
-    });
+    })) as WhisperOutput;
 
-    // The model returns segments with timestamps
-    // Parse the output into our standard format
-    return this.parseOutput(output);
-  }
-
-  private parseOutput(output: unknown): TranscriptSegment[] {
-    // Handle different possible output formats from the model
-    if (typeof output === "string") {
-      // If it's a plain string, return as single segment
-      return [{ start: 0, end: 0, text: output }];
+    if (output.chunks && Array.isArray(output.chunks)) {
+      return output.chunks.map((chunk) => ({
+        start: chunk.timestamp[0],
+        end: chunk.timestamp[1],
+        text: chunk.text.trim(),
+      }));
     }
 
-    if (Array.isArray(output)) {
-      return output.map((seg) => {
-        const s = seg as Record<string, unknown>;
-        const ts = s.timestamp as number[] | undefined;
-        return {
-          start: Number(s.start ?? ts?.[0] ?? 0),
-          end: Number(s.end ?? ts?.[1] ?? 0),
-          text: String(s.text ?? s.transcript ?? ""),
-        };
-      });
-    }
-
-    // Handle object with segments/text property
-    const obj = output as Record<string, unknown>;
-    if (obj.segments && Array.isArray(obj.segments)) {
-      return this.parseOutput(obj.segments);
-    }
-    if (obj.text) {
-      return [{ start: 0, end: 0, text: String(obj.text) }];
+    // Fallback: single segment from full text
+    if (output.text) {
+      return [{ start: 0, end: 0, text: output.text.trim() }];
     }
 
     return [{ start: 0, end: 0, text: JSON.stringify(output) }];
