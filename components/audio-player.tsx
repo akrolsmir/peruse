@@ -43,10 +43,8 @@ export const AudioPlayer = forwardRef<AudioPlayerHandle, AudioPlayerProps>(
     useEffect(() => {
       const audio = audioRef.current;
       if (!audio) return;
-
       const onLoaded = () => setDuration(audio.duration);
       const onEnded = () => setIsPlaying(false);
-
       audio.addEventListener("loadedmetadata", onLoaded);
       audio.addEventListener("ended", onEnded);
       return () => {
@@ -68,7 +66,7 @@ export const AudioPlayer = forwardRef<AudioPlayerHandle, AudioPlayerProps>(
     const handleSeek = (e: React.MouseEvent<HTMLDivElement>) => {
       if (!audioRef.current || !duration) return;
       const rect = e.currentTarget.getBoundingClientRect();
-      const pct = (e.clientX - rect.left) / rect.width;
+      const pct = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
       audioRef.current.currentTime = pct * duration;
     };
 
@@ -82,6 +80,7 @@ export const AudioPlayer = forwardRef<AudioPlayerHandle, AudioPlayerProps>(
     };
 
     const formatTime = (s: number) => {
+      if (!isFinite(s)) return "0:00";
       const h = Math.floor(s / 3600);
       const m = Math.floor((s % 3600) / 60);
       const sec = Math.floor(s % 60);
@@ -92,53 +91,61 @@ export const AudioPlayer = forwardRef<AudioPlayerHandle, AudioPlayerProps>(
     const progress = duration > 0 ? (currentTime / duration) * 100 : 0;
 
     return (
-      <div className="rounded-lg border border-zinc-200 bg-zinc-50 p-4 dark:border-zinc-800 dark:bg-zinc-900">
+      <div>
         <audio ref={audioRef} src={src} preload="metadata" onTimeUpdate={handleTimeUpdate} />
 
-        <div className="flex items-center gap-3">
-          <button
-            onClick={() => skip(-15)}
-            className="text-xs text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100"
-            title="Back 15s"
-          >
-            -15s
-          </button>
-          <button
-            onClick={togglePlay}
-            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-zinc-900 text-white hover:bg-zinc-700 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-300"
-          >
-            {isPlaying ? (
-              <svg width="14" height="14" viewBox="0 0 14 14" fill="currentColor">
-                <rect x="2" y="1" width="4" height="12" rx="1" />
-                <rect x="8" y="1" width="4" height="12" rx="1" />
-              </svg>
-            ) : (
-              <svg width="14" height="14" viewBox="0 0 14 14" fill="currentColor">
-                <path d="M3 1.5v11l9-5.5z" />
-              </svg>
-            )}
-          </button>
-          <button
-            onClick={() => skip(15)}
-            className="text-xs text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100"
-            title="Forward 15s"
-          >
-            +15s
-          </button>
+        {/* Seek bar — full width at top edge of player bar */}
+        <div
+          className="group relative h-1 w-full cursor-pointer bg-zinc-200 transition-all hover:h-1.5 dark:bg-zinc-800"
+          onClick={handleSeek}
+        >
+          <div
+            className="absolute left-0 top-0 h-full bg-amber-500"
+            style={{ width: `${progress}%` }}
+          />
+          <div
+            className="absolute top-1/2 h-3 w-3 -translate-x-1/2 -translate-y-1/2 rounded-full bg-amber-500 opacity-0 shadow-sm transition-opacity group-hover:opacity-100"
+            style={{ left: `${progress}%` }}
+          />
+        </div>
 
-          <div className="flex flex-1 items-center gap-2">
-            <span className="text-xs tabular-nums text-zinc-500">{formatTime(currentTime)}</span>
-            <div
-              className="relative h-1.5 flex-1 cursor-pointer rounded-full bg-zinc-200 dark:bg-zinc-700"
-              onClick={handleSeek}
+        {/* Controls */}
+        <div className="flex items-center gap-4 px-4 py-3">
+          <div className="flex items-center gap-1">
+            <button
+              onClick={() => skip(-15)}
+              className="rounded-md px-2 py-1 font-mono text-xs tabular-nums text-zinc-400 transition-colors hover:text-zinc-700 dark:hover:text-zinc-200"
             >
-              <div
-                className="absolute left-0 top-0 h-full rounded-full bg-zinc-900 dark:bg-zinc-100"
-                style={{ width: `${progress}%` }}
-              />
-            </div>
-            <span className="text-xs tabular-nums text-zinc-500">{formatTime(duration)}</span>
+              −15
+            </button>
+            <button
+              onClick={togglePlay}
+              className="flex h-8 w-8 items-center justify-center rounded-full bg-amber-500 text-white transition-all hover:bg-amber-400 active:scale-95"
+            >
+              {isPlaying ? (
+                <svg width="12" height="12" viewBox="0 0 14 14" fill="currentColor">
+                  <rect x="2" y="1" width="4" height="12" rx="1" />
+                  <rect x="8" y="1" width="4" height="12" rx="1" />
+                </svg>
+              ) : (
+                <svg width="12" height="12" viewBox="0 0 14 14" fill="currentColor">
+                  <path d="M4 1.5v11l8-5.5z" />
+                </svg>
+              )}
+            </button>
+            <button
+              onClick={() => skip(15)}
+              className="rounded-md px-2 py-1 font-mono text-xs tabular-nums text-zinc-400 transition-colors hover:text-zinc-700 dark:hover:text-zinc-200"
+            >
+              +15
+            </button>
           </div>
+
+          <span className="font-mono text-xs tabular-nums text-zinc-400">
+            {formatTime(currentTime)}
+            <span className="mx-1.5 text-zinc-300 dark:text-zinc-600">/</span>
+            {formatTime(duration)}
+          </span>
         </div>
       </div>
     );

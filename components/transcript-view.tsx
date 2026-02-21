@@ -27,25 +27,25 @@ export function TranscriptView({
   onSeek,
 }: TranscriptViewProps) {
   return (
-    <div className="space-y-4">
+    <div className="space-y-1">
       {paragraphs.map((p, i) => {
         const isActive = currentTime >= p.start && currentTime < p.end;
         return (
           <div
             key={i}
-            className={`rounded-lg p-3 transition-colors ${
+            className={`border-l-2 py-3 pl-4 pr-2 transition-colors duration-300 ${
               isActive
-                ? "bg-blue-50 dark:bg-blue-950"
-                : "hover:bg-zinc-50 dark:hover:bg-zinc-900"
+                ? "border-amber-500 bg-amber-50/60 dark:bg-amber-950/20"
+                : "border-transparent hover:border-zinc-200 hover:bg-zinc-50/50 dark:hover:border-zinc-700 dark:hover:bg-zinc-900/50"
             }`}
           >
             <button
               onClick={() => onSeek(p.start)}
-              className="mb-1 text-xs font-mono tabular-nums text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-200"
+              className="mb-1.5 font-mono text-[11px] tabular-nums text-amber-600 transition-colors hover:text-amber-500 dark:text-amber-400 dark:hover:text-amber-300"
             >
               {formatTimestamp(p.start)}
             </button>
-            <p className="text-sm leading-relaxed text-zinc-700 dark:text-zinc-300">
+            <p className="text-[14px] leading-relaxed text-zinc-600 dark:text-zinc-300">
               {p.text}
             </p>
           </div>
