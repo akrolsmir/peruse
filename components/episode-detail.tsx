@@ -27,7 +27,7 @@ export function EpisodeDetail({ slug }: { slug: string }) {
   const episode = useQuery(api.episodes.getBySlug, { slug });
   const playerRef = useRef<AudioPlayerHandle>(null);
   const [currentTime, setCurrentTime] = useState(0);
-  const [viewMode, setViewMode] = useState<"cleaned" | "both" | "raw">("cleaned");
+  const [viewMode, setViewMode] = useState<"cleaned" | "both" | "raw" | "json">("cleaned");
 
   if (episode === undefined) {
     return (
@@ -170,7 +170,7 @@ export function EpisodeDetail({ slug }: { slug: string }) {
                 </h2>
                 {hasRaw && paragraphs.length > 0 && (
                   <div className="flex rounded-lg border border-zinc-200 p-0.5 dark:border-zinc-800">
-                    {(["cleaned", "both", "raw"] as const).map((mode) => (
+                    {(["cleaned", "both", "raw", "json"] as const).map((mode) => (
                       <button
                         key={mode}
                         onClick={() => setViewMode(mode)}
@@ -180,13 +180,17 @@ export function EpisodeDetail({ slug }: { slug: string }) {
                             : "text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300"
                         }`}
                       >
-                        {mode}
+                        {mode === "json" ? "JSON" : mode}
                       </button>
                     ))}
                   </div>
                 )}
               </div>
-              {viewMode === "both" && hasRaw && paragraphs.length > 0 ? (
+              {viewMode === "json" && hasRaw ? (
+                <pre className="whitespace-pre-wrap break-words rounded-xl border border-zinc-200 bg-zinc-50 p-4 font-mono text-[12px] leading-relaxed text-zinc-600 dark:border-zinc-800 dark:bg-zinc-900/50 dark:text-zinc-400">
+                  {JSON.stringify(JSON.parse(episode.rawTranscript!), null, 2)}
+                </pre>
+              ) : viewMode === "both" && hasRaw && paragraphs.length > 0 ? (
                 <div className="ml-[calc(-50vw+50%)] w-screen">
                   <div className="mx-auto max-w-5xl px-4">
                     <div className="mb-2 grid grid-cols-2 gap-6">
