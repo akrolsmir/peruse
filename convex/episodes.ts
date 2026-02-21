@@ -7,6 +7,13 @@ export const list = query({
   },
 });
 
+export const getById = query({
+  args: { id: v.id("episodes") },
+  handler: async (ctx, args) => {
+    return await ctx.db.get(args.id);
+  },
+});
+
 export const getBySlug = query({
   args: { slug: v.string() },
   handler: async (ctx, args) => {
@@ -56,6 +63,25 @@ export const updateStatus = mutation({
     if (fields.error !== undefined) update.error = fields.error;
     if (fields.audioUrl !== undefined) update.audioUrl = fields.audioUrl;
     await ctx.db.patch(id, update);
+  },
+});
+
+export const clone = mutation({
+  args: { id: v.id("episodes") },
+  handler: async (ctx, args) => {
+    const episode = await ctx.db.get(args.id);
+    if (!episode) throw new Error("Episode not found");
+    const slug = episode.slug + "-re-" + Date.now().toString(36);
+    const newId = await ctx.db.insert("episodes", {
+      title: episode.title,
+      url: episode.url,
+      audioUrl: episode.audioUrl,
+      slug,
+      status: "processing",
+      rawTranscript: episode.rawTranscript,
+      createdAt: Date.now(),
+    });
+    return { id: newId, slug };
   },
 });
 

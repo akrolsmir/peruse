@@ -39,6 +39,7 @@ export function EpisodeList() {
               title: string;
               slug: string;
               status: string;
+              rawTranscript?: string;
               createdAt: number;
             }
           }

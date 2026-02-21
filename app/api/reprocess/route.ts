@@ -2,58 +2,37 @@ import { NextRequest, NextResponse } from "next/server";
 import { ConvexHttpClient } from "convex/browser";
 import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
-import { validateAudioUrl } from "@/lib/audio";
-import { createASR, type ASRModel } from "@/lib/transcribe";
 import { postProcess } from "@/lib/postprocess";
+import type { TranscriptSegment } from "@/lib/transcribe";
 
 function getConvex() {
   return new ConvexHttpClient(process.env.NEXT_PUBLIC_CONVEX_URL!);
 }
 
 export async function POST(req: NextRequest) {
-  const { episodeId, url, model } = await req.json();
+  const { episodeId } = await req.json();
   const id = episodeId as Id<"episodes">;
-  const asrModel = (model || "whisper") as ASRModel;
 
-  processPipeline(id, url, asrModel).catch((err) => {
-    console.error("Pipeline error:", err);
+  reprocessPipeline(id).catch((err) => {
+    console.error("Reprocess error:", err);
   });
 
   return NextResponse.json({ ok: true });
 }
 
-async function processPipeline(id: Id<"episodes">, url: string, model: ASRModel) {
+async function reprocessPipeline(id: Id<"episodes">) {
   try {
-    await getConvex().mutation(api.episodes.updateStatus, {
-      id,
-      status: "downloading",
-    });
-
-    const audioUrl = await validateAudioUrl(url);
-    await getConvex().mutation(api.episodes.updateStatus, {
-      id,
-      status: "downloading",
-      audioUrl,
-    });
-
-    await getConvex().mutation(api.episodes.updateStatus, {
-      id,
-      status: "transcribing",
-    });
-
-    const asr = createASR(model);
-    const segments = await asr.transcribe(audioUrl);
-    const rawTranscript = JSON.stringify(segments);
-
-    await getConvex().mutation(api.episodes.update, {
-      id,
-      rawTranscript,
-    });
+    const episode = await getConvex().query(api.episodes.getById, { id });
+    if (!episode?.rawTranscript) {
+      throw new Error("No raw transcript to reprocess");
+    }
 
     await getConvex().mutation(api.episodes.updateStatus, {
       id,
       status: "processing",
     });
+
+    const segments: TranscriptSegment[] = JSON.parse(episode.rawTranscript);
 
     await postProcess(segments, {
       async onChunkDone(paragraphs) {
@@ -72,7 +51,7 @@ async function processPipeline(id: Id<"episodes">, url: string, model: ASRModel)
       },
     });
   } catch (err) {
-    console.error("Pipeline failed:", err);
+    console.error("Reprocess failed:", err);
     await getConvex().mutation(api.episodes.updateStatus, {
       id,
       status: "error",

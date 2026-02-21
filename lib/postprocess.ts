@@ -18,7 +18,16 @@ export interface PostProcessedResult {
   chapters: Chapter[];
 }
 
-const CHUNK_DURATION = 15 * 60; // 15 minutes in seconds
+export interface ProgressCallback {
+  onChunkDone(paragraphs: ProcessedParagraph[], chunkIndex: number, totalChunks: number): Promise<void>;
+  onSummaryDone(summary: string, chapters: Chapter[]): Promise<void>;
+}
+
+const CHUNK_DURATION = 60; // 1 minute in seconds
+
+function stripCodeFence(text: string): string {
+  return text.replace(/^```(?:json)?\s*\n?/i, "").replace(/\n?```\s*$/i, "").trim();
+}
 
 function chunkSegments(
   segments: TranscriptSegment[]
@@ -42,16 +51,17 @@ function chunkSegments(
 }
 
 export async function postProcess(
-  segments: TranscriptSegment[]
+  segments: TranscriptSegment[],
+  progress?: ProgressCallback
 ): Promise<PostProcessedResult> {
   const client = new Anthropic();
 
   const chunks = chunkSegments(segments);
-
-  // Process chunks to get cleaned paragraphs
   const allParagraphs: ProcessedParagraph[] = [];
 
-  for (const chunk of chunks) {
+  for (let ci = 0; ci < chunks.length; ci++) {
+    const chunk = chunks[ci];
+    console.log(`[postprocess] Cleaning chunk ${ci + 1}/${chunks.length} (${chunk.length} segments)`);
     const chunkText = chunk
       .map(
         (s) =>
@@ -79,35 +89,45 @@ Rules:
 Transcript chunk:
 ${chunkText}
 
-Respond with ONLY valid JSON in this format:
+Respond with ONLY raw JSON (no markdown, no code fences, no backticks). Use this exact format:
 {"paragraphs": [{"start": 0.0, "end": 15.5, "text": "Cleaned paragraph text here."}]}`,
         },
       ],
     });
 
+    console.log(`[${new Date().toISOString()}] [postprocess] Chunk ${ci + 1}/${chunks.length} done (${response.usage?.input_tokens}in/${response.usage?.output_tokens}out tokens)`);
     const content = response.content[0];
+    let chunkParagraphs: ProcessedParagraph[] = [];
+
     if (content.type === "text") {
       try {
-        const parsed = JSON.parse(content.text);
-        allParagraphs.push(...parsed.paragraphs);
+        const parsed = JSON.parse(stripCodeFence(content.text));
+        chunkParagraphs = parsed.paragraphs;
       } catch {
-        // If JSON parsing fails, use the raw chunk
+        console.warn(`[postprocess] Chunk ${ci + 1} returned invalid JSON, using raw text`);
         if (chunk.length > 0) {
-          allParagraphs.push({
+          chunkParagraphs = [{
             start: chunk[0].start,
             end: chunk[chunk.length - 1].end,
             text: chunk.map((s) => s.text).join(" "),
-          });
+          }];
         }
       }
     }
+
+    allParagraphs.push(...chunkParagraphs);
+
+    if (progress) {
+      await progress.onChunkDone(allParagraphs, ci, chunks.length);
+    }
   }
 
-  // Generate summary and chapters from the full cleaned transcript
+  // Generate summary and chapters
   const fullText = allParagraphs.map((p) => p.text).join("\n\n");
 
+  console.log(`[postprocess] Generating summary and chapters (${allParagraphs.length} paragraphs, ${fullText.length} chars)`);
   const summaryResponse = await client.messages.create({
-    model: "claude-sonnet-4-6-20250514",
+    model: "claude-sonnet-4-6",
     max_tokens: 2048,
     messages: [
       {
@@ -117,7 +137,7 @@ Respond with ONLY valid JSON in this format:
 Transcript:
 ${fullText}
 
-Respond with ONLY valid JSON in this format:
+Respond with ONLY raw JSON (no markdown, no code fences, no backticks). Use this exact format:
 {
   "summary": "A 2-3 paragraph summary of the podcast episode.",
   "chapters": [
@@ -136,16 +156,21 @@ For chapters:
   let summary = "";
   let chapters: Chapter[] = [];
 
+  console.log(`[postprocess] Summary done (${summaryResponse.usage?.input_tokens}in/${summaryResponse.usage?.output_tokens}out tokens)`);
   const summaryContent = summaryResponse.content[0];
   if (summaryContent.type === "text") {
     try {
-      const parsed = JSON.parse(summaryContent.text);
+      const parsed = JSON.parse(stripCodeFence(summaryContent.text));
       summary = parsed.summary;
       chapters = parsed.chapters;
     } catch {
       summary = "Summary generation failed.";
       chapters = [{ title: "Full Episode", timestamp: 0 }];
     }
+  }
+
+  if (progress) {
+    await progress.onSummaryDone(summary, chapters);
   }
 
   return { paragraphs: allParagraphs, summary, chapters };

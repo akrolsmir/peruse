@@ -46,6 +46,10 @@ export function EpisodeDetail({ slug }: { slug: string }) {
   }
 
   const isDone = episode.status === "done";
+  const isProcessing = episode.status === "processing";
+  const isError = episode.status === "error";
+  const hasContent = isDone || isProcessing;
+
   const paragraphs = episode.transcript ? JSON.parse(episode.transcript) : [];
   const chapters: Chapter[] = episode.chapters
     ? JSON.parse(episode.chapters)
@@ -74,22 +78,38 @@ export function EpisodeDetail({ slug }: { slug: string }) {
         </p>
       </div>
 
-      {!isDone ? (
+      {!hasContent && !isError && (
         <div className="rounded-lg border border-zinc-200 p-8 text-center dark:border-zinc-800">
           <StatusBadge status={episode.status} />
           <p className="mt-4 text-sm text-zinc-500">
-            {episode.status === "error"
-              ? episode.error || "An error occurred during processing."
-              : "Your episode is being processed. This page will update automatically."}
+            Your episode is being processed. This page will update automatically.
           </p>
         </div>
-      ) : (
+      )}
+
+      {isError && !paragraphs.length && (
+        <div className="rounded-lg border border-zinc-200 p-8 text-center dark:border-zinc-800">
+          <StatusBadge status={episode.status} />
+          <p className="mt-4 text-sm text-zinc-500">
+            {episode.error || "An error occurred during processing."}
+          </p>
+        </div>
+      )}
+
+      {(hasContent || paragraphs.length > 0) && (
         <div className="space-y-8">
           <AudioPlayer
             ref={playerRef}
             src={audioUrl}
             onTimeUpdate={setCurrentTime}
           />
+
+          {isProcessing && (
+            <div className="flex items-center gap-2 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-700 dark:border-amber-800 dark:bg-amber-950 dark:text-amber-300">
+              <span className="h-2 w-2 animate-pulse rounded-full bg-amber-500" />
+              Processing transcript — new paragraphs will appear as they're ready
+            </div>
+          )}
 
           {episode.summary && (
             <section>
@@ -130,6 +150,11 @@ export function EpisodeDetail({ slug }: { slug: string }) {
             <section>
               <h2 className="mb-3 text-lg font-semibold text-zinc-900 dark:text-zinc-100">
                 Transcript
+                {isProcessing && (
+                  <span className="ml-2 text-sm font-normal text-zinc-400">
+                    ({paragraphs.length} paragraphs so far)
+                  </span>
+                )}
               </h2>
               <TranscriptView
                 paragraphs={paragraphs}
