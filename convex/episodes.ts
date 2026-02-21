@@ -51,7 +51,7 @@ export const updateStatus = mutation({
       v.literal("transcribing"),
       v.literal("processing"),
       v.literal("done"),
-      v.literal("error")
+      v.literal("error"),
     ),
     error: v.optional(v.string()),
     audioUrl: v.optional(v.string()),
@@ -99,8 +99,8 @@ export const update = mutation({
         v.literal("transcribing"),
         v.literal("processing"),
         v.literal("done"),
-        v.literal("error")
-      )
+        v.literal("error"),
+      ),
     ),
   },
   handler: async (ctx, args) => {

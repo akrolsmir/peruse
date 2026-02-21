@@ -19,8 +19,7 @@ function formatTimestamp(seconds: number): string {
   const h = Math.floor(seconds / 3600);
   const m = Math.floor((seconds % 3600) / 60);
   const s = Math.floor(seconds % 60);
-  if (h > 0)
-    return `${h}:${m.toString().padStart(2, "0")}:${s.toString().padStart(2, "0")}`;
+  if (h > 0) return `${h}:${m.toString().padStart(2, "0")}:${s.toString().padStart(2, "0")}`;
   return `${m}:${s.toString().padStart(2, "0")}`;
 }
 
@@ -43,10 +42,7 @@ export function EpisodeDetail({ slug }: { slug: string }) {
     return (
       <div className="py-24 text-center">
         <p className="text-sm text-zinc-500">Episode not found.</p>
-        <Link
-          href="/"
-          className="mt-4 inline-block text-sm text-amber-600 hover:text-amber-500"
-        >
+        <Link href="/" className="mt-4 inline-block text-sm text-amber-600 hover:text-amber-500">
           &larr; Back to episodes
         </Link>
       </div>
@@ -59,12 +55,8 @@ export function EpisodeDetail({ slug }: { slug: string }) {
   const hasContent = isDone || isProcessing;
 
   const paragraphs = episode.transcript ? JSON.parse(episode.transcript) : [];
-  const chapters: Chapter[] = episode.chapters
-    ? JSON.parse(episode.chapters)
-    : [];
-  const rawSegments = episode.rawTranscript
-    ? JSON.parse(episode.rawTranscript)
-    : [];
+  const chapters: Chapter[] = episode.chapters ? JSON.parse(episode.chapters) : [];
+  const rawSegments = episode.rawTranscript ? JSON.parse(episode.rawTranscript) : [];
   const audioUrl = episode.audioUrl || episode.url;
   const showPlayer = hasContent || paragraphs.length > 0;
   const hasRaw = rawSegments.length > 0;
@@ -109,9 +101,7 @@ export function EpisodeDetail({ slug }: { slug: string }) {
       {/* Error state */}
       {isError && !paragraphs.length && (
         <div className="rounded-xl border border-red-200 bg-red-50 p-10 text-center dark:border-red-900/50 dark:bg-red-950/20">
-          <p className="text-sm font-medium text-red-700 dark:text-red-400">
-            Processing failed
-          </p>
+          <p className="text-sm font-medium text-red-700 dark:text-red-400">Processing failed</p>
           <p className="mt-1 text-xs text-red-500/70 dark:text-red-400/50">
             {episode.error || "An unexpected error occurred."}
           </p>
@@ -159,9 +149,7 @@ export function EpisodeDetail({ slug }: { slug: string }) {
                     <span className="w-14 shrink-0 font-mono text-xs tabular-nums text-amber-600 dark:text-amber-400">
                       {formatTimestamp(ch.timestamp)}
                     </span>
-                    <span className="text-sm text-zinc-700 dark:text-zinc-300">
-                      {ch.title}
-                    </span>
+                    <span className="text-sm text-zinc-700 dark:text-zinc-300">{ch.title}</span>
                   </button>
                 ))}
               </div>
@@ -244,11 +232,7 @@ export function EpisodeDetail({ slug }: { slug: string }) {
       {/* Sticky bottom player */}
       {showPlayer && (
         <div className="fixed bottom-0 left-0 right-0 z-50 border-t border-zinc-200/80 bg-white/80 backdrop-blur-xl dark:border-zinc-800/80 dark:bg-zinc-950/80">
-          <AudioPlayer
-            ref={playerRef}
-            src={audioUrl}
-            onTimeUpdate={setCurrentTime}
-          />
+          <AudioPlayer ref={playerRef} src={audioUrl} onTimeUpdate={setCurrentTime} />
         </div>
       )}
     </>

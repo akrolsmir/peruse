@@ -16,16 +16,11 @@ function formatTimestamp(seconds: number): string {
   const h = Math.floor(seconds / 3600);
   const m = Math.floor((seconds % 3600) / 60);
   const s = Math.floor(seconds % 60);
-  if (h > 0)
-    return `${h}:${m.toString().padStart(2, "0")}:${s.toString().padStart(2, "0")}`;
+  if (h > 0) return `${h}:${m.toString().padStart(2, "0")}:${s.toString().padStart(2, "0")}`;
   return `${m}:${s.toString().padStart(2, "0")}`;
 }
 
-export function RawTranscriptView({
-  segments,
-  currentTime,
-  onSeek,
-}: RawTranscriptViewProps) {
+export function RawTranscriptView({ segments, currentTime, onSeek }: RawTranscriptViewProps) {
   return (
     <div className="space-y-px font-mono text-[13px]">
       {segments.map((seg, i) => {
@@ -45,9 +40,7 @@ export function RawTranscriptView({
             >
               {formatTimestamp(seg.start)}
             </button>
-            <span className="leading-relaxed text-zinc-500 dark:text-zinc-400">
-              {seg.text}
-            </span>
+            <span className="leading-relaxed text-zinc-500 dark:text-zinc-400">{seg.text}</span>
           </div>
         );
       })}

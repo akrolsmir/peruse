@@ -11,18 +11,15 @@ const statusConfig: Record<string, { label: string; className: string }> = {
   },
   transcribing: {
     label: "Transcribing",
-    className:
-      "bg-amber-100 text-amber-700 dark:bg-amber-900 dark:text-amber-300",
+    className: "bg-amber-100 text-amber-700 dark:bg-amber-900 dark:text-amber-300",
   },
   processing: {
     label: "Processing",
-    className:
-      "bg-purple-100 text-purple-700 dark:bg-purple-900 dark:text-purple-300",
+    className: "bg-purple-100 text-purple-700 dark:bg-purple-900 dark:text-purple-300",
   },
   done: {
     label: "Done",
-    className:
-      "bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300",
+    className: "bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300",
   },
   error: {
     label: "Error",

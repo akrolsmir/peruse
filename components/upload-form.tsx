@@ -38,9 +38,7 @@ export function UploadForm() {
 
     try {
       const episodeTitle =
-        title.trim() ||
-        new URL(url).pathname.split("/").pop() ||
-        "Untitled Episode";
+        title.trim() || new URL(url).pathname.split("/").pop() || "Untitled Episode";
       const slug = slugify(episodeTitle) + "-" + Date.now().toString(36);
 
       const episodeId = await createEpisode({
@@ -116,14 +114,10 @@ export function UploadForm() {
             >
               <div
                 className={`mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded-full border-2 transition-colors ${
-                  model === m.value
-                    ? "border-amber-500"
-                    : "border-zinc-300 dark:border-zinc-600"
+                  model === m.value ? "border-amber-500" : "border-zinc-300 dark:border-zinc-600"
                 }`}
               >
-                {model === m.value && (
-                  <div className="h-2 w-2 rounded-full bg-amber-500" />
-                )}
+                {model === m.value && <div className="h-2 w-2 rounded-full bg-amber-500" />}
               </div>
               <input
                 type="radio"

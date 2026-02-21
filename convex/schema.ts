@@ -13,7 +13,7 @@ export default defineSchema({
       v.literal("transcribing"),
       v.literal("processing"),
       v.literal("done"),
-      v.literal("error")
+      v.literal("error"),
     ),
     error: v.optional(v.string()),
     rawTranscript: v.optional(v.string()),

@@ -1,6 +1,7 @@
 # PTT (Podcast to Text) - Implementation Plan
 
 ## Context
+
 Build an app that converts podcast episodes into high-quality transcripts. Users provide a podcast URL, the system downloads audio, transcribes via Replicate (nvidia/canary-qwen-2.5b), post-processes with Claude Sonnet 4.6, and displays the result with an inline player, summary, chapters, and timestamped paragraphs.
 
 Starting from a fresh Next.js 16 + Tailwind v4 + Bun scaffold.
@@ -20,6 +21,7 @@ bun add convex @anthropic-ai/sdk replicate
 Run `bunx convex init` to scaffold Convex, then define the schema.
 
 **`convex/schema.ts`**
+
 ```ts
 episodes {
   title: string
@@ -37,6 +39,7 @@ episodes {
 ```
 
 **Convex functions:**
+
 - `episodes.list` — query all episodes (for homepage)
 - `episodes.getBySlug` — query single episode by slug
 - `episodes.create` — mutation to insert new episode
@@ -91,22 +94,25 @@ This is a Next.js API route that orchestrates the full pipeline. Called after ep
 5. **Status updates** — update Convex status at each stage so the UI reflects progress
 
 ### ASR Abstraction (`lib/transcribe.ts`)
+
 ```ts
 interface TranscriptSegment {
-  start: number   // seconds
-  end: number
-  text: string
+  start: number; // seconds
+  end: number;
+  text: string;
 }
 
 interface ASRProvider {
-  transcribe(audioUrl: string): Promise<TranscriptSegment[]>
+  transcribe(audioUrl: string): Promise<TranscriptSegment[]>;
 }
 ```
 
 Default implementation uses Replicate. Swapping models = new class implementing this interface.
 
 ### Post-processing (`lib/postprocess.ts`)
+
 Uses `@anthropic-ai/sdk` with `claude-sonnet-4-6`. Sends raw segments and asks for structured JSON output containing:
+
 - Cleaned paragraphs with start/end timestamps
 - Summary
 - Chapter titles with timestamps
@@ -118,17 +124,20 @@ For long transcripts, chunk into ~15-minute segments and process each, then comb
 ## 5. Pages
 
 ### Homepage `/` (`app/page.tsx`)
+
 - Query `episodes.list` from Convex
 - Display cards with title, status badge, date
 - Link to `/ep/[slug]` for completed episodes
 - Link to `/upload` button
 
 ### Upload `/upload/page.tsx`
+
 - Simple form: text input for podcast URL
 - On submit: call `episodes.create` mutation, then POST to `/api/process` with the episode ID
 - Redirect to homepage or episode page with "processing" status
 
 ### Episode `/ep/[slug]/page.tsx`
+
 - Query `episodes.getBySlug`
 - If processing: show status/progress
 - If done: render:

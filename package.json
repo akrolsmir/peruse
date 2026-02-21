@@ -8,7 +8,9 @@
     "dev:next": "next dev",
     "dev:convex": "convex dev",
     "build": "next build",
-    "start": "next start"
+    "start": "next start",
+    "fmt": "oxfmt --write .",
+    "fmt:check": "oxfmt --check ."
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.78.0",
@@ -24,6 +26,7 @@
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "concurrently": "^9.2.1",
+    "oxfmt": "^0.34.0",
     "tailwindcss": "^4",
     "typescript": "^5"
   },

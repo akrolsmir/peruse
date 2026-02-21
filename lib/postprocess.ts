@@ -19,19 +19,24 @@ export interface PostProcessedResult {
 }
 
 export interface ProgressCallback {
-  onChunkDone(paragraphs: ProcessedParagraph[], chunkIndex: number, totalChunks: number): Promise<void>;
+  onChunkDone(
+    paragraphs: ProcessedParagraph[],
+    chunkIndex: number,
+    totalChunks: number,
+  ): Promise<void>;
   onSummaryDone(summary: string, chapters: Chapter[]): Promise<void>;
 }
 
 const CHUNK_DURATION = 60; // 1 minute in seconds
 
 function stripCodeFence(text: string): string {
-  return text.replace(/^```(?:json)?\s*\n?/i, "").replace(/\n?```\s*$/i, "").trim();
+  return text
+    .replace(/^```(?:json)?\s*\n?/i, "")
+    .replace(/\n?```\s*$/i, "")
+    .trim();
 }
 
-function chunkSegments(
-  segments: TranscriptSegment[]
-): TranscriptSegment[][] {
+function chunkSegments(segments: TranscriptSegment[]): TranscriptSegment[][] {
   if (segments.length === 0) return [[]];
 
   const chunks: TranscriptSegment[][] = [];
@@ -52,7 +57,7 @@ function chunkSegments(
 
 export async function postProcess(
   segments: TranscriptSegment[],
-  progress?: ProgressCallback
+  progress?: ProgressCallback,
 ): Promise<PostProcessedResult> {
   const client = new Anthropic();
 
@@ -61,12 +66,11 @@ export async function postProcess(
 
   for (let ci = 0; ci < chunks.length; ci++) {
     const chunk = chunks[ci];
-    console.log(`[postprocess] Cleaning chunk ${ci + 1}/${chunks.length} (${chunk.length} segments)`);
+    console.log(
+      `[postprocess] Cleaning chunk ${ci + 1}/${chunks.length} (${chunk.length} segments)`,
+    );
     const chunkText = chunk
-      .map(
-        (s) =>
-          `[${formatTime(s.start)} - ${formatTime(s.end)}] ${s.text}`
-      )
+      .map((s) => `[${formatTime(s.start)} - ${formatTime(s.end)}] ${s.text}`)
       .join("\n");
 
     const response = await client.messages.create({
@@ -95,7 +99,9 @@ Respond with ONLY raw JSON (no markdown, no code fences, no backticks). Use this
       ],
     });
 
-    console.log(`[${new Date().toISOString()}] [postprocess] Chunk ${ci + 1}/${chunks.length} done (${response.usage?.input_tokens}in/${response.usage?.output_tokens}out tokens)`);
+    console.log(
+      `[${new Date().toISOString()}] [postprocess] Chunk ${ci + 1}/${chunks.length} done (${response.usage?.input_tokens}in/${response.usage?.output_tokens}out tokens)`,
+    );
     const content = response.content[0];
     let chunkParagraphs: ProcessedParagraph[] = [];
 
@@ -106,11 +112,13 @@ Respond with ONLY raw JSON (no markdown, no code fences, no backticks). Use this
       } catch {
         console.warn(`[postprocess] Chunk ${ci + 1} returned invalid JSON, using raw text`);
         if (chunk.length > 0) {
-          chunkParagraphs = [{
-            start: chunk[0].start,
-            end: chunk[chunk.length - 1].end,
-            text: chunk.map((s) => s.text).join(" "),
-          }];
+          chunkParagraphs = [
+            {
+              start: chunk[0].start,
+              end: chunk[chunk.length - 1].end,
+              text: chunk.map((s) => s.text).join(" "),
+            },
+          ];
         }
       }
     }
@@ -125,7 +133,9 @@ Respond with ONLY raw JSON (no markdown, no code fences, no backticks). Use this
   // Generate summary and chapters
   const fullText = allParagraphs.map((p) => p.text).join("\n\n");
 
-  console.log(`[postprocess] Generating summary and chapters (${allParagraphs.length} paragraphs, ${fullText.length} chars)`);
+  console.log(
+    `[postprocess] Generating summary and chapters (${allParagraphs.length} paragraphs, ${fullText.length} chars)`,
+  );
   const summaryResponse = await client.messages.create({
     model: "claude-sonnet-4-6",
     max_tokens: 2048,
@@ -156,7 +166,9 @@ For chapters:
   let summary = "";
   let chapters: Chapter[] = [];
 
-  console.log(`[postprocess] Summary done (${summaryResponse.usage?.input_tokens}in/${summaryResponse.usage?.output_tokens}out tokens)`);
+  console.log(
+    `[postprocess] Summary done (${summaryResponse.usage?.input_tokens}in/${summaryResponse.usage?.output_tokens}out tokens)`,
+  );
   const summaryContent = summaryResponse.content[0];
   if (summaryContent.type === "text") {
     try {

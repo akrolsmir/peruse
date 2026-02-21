@@ -16,16 +16,11 @@ function formatTimestamp(seconds: number): string {
   const h = Math.floor(seconds / 3600);
   const m = Math.floor((seconds % 3600) / 60);
   const s = Math.floor(seconds % 60);
-  if (h > 0)
-    return `${h}:${m.toString().padStart(2, "0")}:${s.toString().padStart(2, "0")}`;
+  if (h > 0) return `${h}:${m.toString().padStart(2, "0")}:${s.toString().padStart(2, "0")}`;
   return `${m}:${s.toString().padStart(2, "0")}`;
 }
 
-export function TranscriptView({
-  paragraphs,
-  currentTime,
-  onSeek,
-}: TranscriptViewProps) {
+export function TranscriptView({ paragraphs, currentTime, onSeek }: TranscriptViewProps) {
   return (
     <div className="space-y-1">
       {paragraphs.map((p, i) => {
@@ -45,9 +40,7 @@ export function TranscriptView({
             >
               {formatTimestamp(p.start)}
             </button>
-            <p className="font-serif text-zinc-600 dark:text-zinc-300">
-              {p.text}
-            </p>
+            <p className="font-serif text-zinc-600 dark:text-zinc-300">{p.text}</p>
           </div>
         );
       })}

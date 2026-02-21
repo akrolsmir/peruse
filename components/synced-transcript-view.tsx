@@ -23,8 +23,7 @@ function formatTimestamp(seconds: number): string {
   const h = Math.floor(seconds / 3600);
   const m = Math.floor((seconds % 3600) / 60);
   const s = Math.floor(seconds % 60);
-  if (h > 0)
-    return `${h}:${m.toString().padStart(2, "0")}:${s.toString().padStart(2, "0")}`;
+  if (h > 0) return `${h}:${m.toString().padStart(2, "0")}:${s.toString().padStart(2, "0")}`;
   return `${m}:${s.toString().padStart(2, "0")}`;
 }
 
@@ -33,10 +32,7 @@ interface SyncedRow {
   rawSegments: Segment[];
 }
 
-function buildSyncedRows(
-  paragraphs: Paragraph[],
-  segments: Segment[]
-): SyncedRow[] {
+function buildSyncedRows(paragraphs: Paragraph[], segments: Segment[]): SyncedRow[] {
   const rows: SyncedRow[] = [];
   let rawIdx = 0;
 
@@ -69,9 +65,7 @@ export function SyncedTranscriptView({
     <div>
       {rows.map((row, i) => {
         const isCleanedActive =
-          row.cleaned !== null &&
-          currentTime >= row.cleaned.start &&
-          currentTime < row.cleaned.end;
+          row.cleaned !== null && currentTime >= row.cleaned.start && currentTime < row.cleaned.end;
 
         return (
           <div
@@ -94,9 +88,7 @@ export function SyncedTranscriptView({
                   >
                     {formatTimestamp(row.cleaned.start)}
                   </button>
-                  <p className="font-serif text-zinc-600 dark:text-zinc-300">
-                    {row.cleaned.text}
-                  </p>
+                  <p className="font-serif text-zinc-600 dark:text-zinc-300">{row.cleaned.text}</p>
                 </>
               )}
             </div>
@@ -104,15 +96,12 @@ export function SyncedTranscriptView({
             {/* Raw column */}
             <div className="space-y-px py-2 font-mono text-[13px]">
               {row.rawSegments.map((seg, j) => {
-                const isSegActive =
-                  currentTime >= seg.start && currentTime < seg.end;
+                const isSegActive = currentTime >= seg.start && currentTime < seg.end;
                 return (
                   <div
                     key={j}
                     className={`flex gap-3 rounded px-2 py-1 transition-colors duration-200 ${
-                      isSegActive
-                        ? "bg-amber-50/60 dark:bg-amber-950/20"
-                        : ""
+                      isSegActive ? "bg-amber-50/60 dark:bg-amber-950/20" : ""
                     }`}
                   >
                     <button
