@@ -45,7 +45,7 @@ export function TranscriptView({
             >
               {formatTimestamp(p.start)}
             </button>
-            <p className="text-[14px] leading-relaxed text-zinc-600 dark:text-zinc-300">
+            <p className="font-serif text-zinc-600 dark:text-zinc-300">
               {p.text}
             </p>
           </div>

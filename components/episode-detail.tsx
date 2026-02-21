@@ -137,7 +137,7 @@ export function EpisodeDetail({ slug }: { slug: string }) {
               <h2 className="mb-4 text-xs font-semibold uppercase tracking-widest text-zinc-400">
                 Summary
               </h2>
-              <div className="whitespace-pre-line text-[15px] leading-relaxed text-zinc-600 dark:text-zinc-300">
+              <div className="whitespace-pre-line font-serif text-zinc-600 dark:text-zinc-300">
                 {episode.summary}
               </div>
             </section>

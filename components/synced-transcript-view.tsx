@@ -94,7 +94,7 @@ export function SyncedTranscriptView({
                   >
                     {formatTimestamp(row.cleaned.start)}
                   </button>
-                  <p className="text-[14px] leading-relaxed text-zinc-600 dark:text-zinc-300">
+                  <p className="font-serif text-zinc-600 dark:text-zinc-300">
                     {row.cleaned.text}
                   </p>
                 </>
