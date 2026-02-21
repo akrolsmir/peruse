@@ -27,14 +27,51 @@ export interface ProgressCallback {
   onSummaryDone(summary: string, chapters: Chapter[]): Promise<void>;
 }
 
+// const MODEL = "claude-haiku-4-5-20251001";
+const MODEL = "claude-sonnet-4-6";
 const CHUNK_DURATION = 60; // 1 minute in seconds
 
-function stripCodeFence(text: string): string {
-  return text
-    .replace(/^```(?:json)?\s*\n?/i, "")
-    .replace(/\n?```\s*$/i, "")
-    .trim();
-}
+const chunkSchema = {
+  type: "object" as const,
+  properties: {
+    paragraphs: {
+      type: "array" as const,
+      items: {
+        type: "object" as const,
+        properties: {
+          start: { type: "number" as const },
+          end: { type: "number" as const },
+          text: { type: "string" as const },
+        },
+        required: ["start", "end", "text"] as const,
+        additionalProperties: false,
+      },
+    },
+  },
+  required: ["paragraphs"] as const,
+  additionalProperties: false,
+};
+
+const summarySchema = {
+  type: "object" as const,
+  properties: {
+    summary: { type: "string" as const },
+    chapters: {
+      type: "array" as const,
+      items: {
+        type: "object" as const,
+        properties: {
+          title: { type: "string" as const },
+          timestamp: { type: "number" as const },
+        },
+        required: ["title", "timestamp"] as const,
+        additionalProperties: false,
+      },
+    },
+  },
+  required: ["summary", "chapters"] as const,
+  additionalProperties: false,
+};
 
 function chunkSegments(segments: TranscriptSegment[]): TranscriptSegment[][] {
   if (segments.length === 0) return [[]];
@@ -66,16 +103,20 @@ export async function postProcess(
 
   for (let ci = 0; ci < chunks.length; ci++) {
     const chunk = chunks[ci];
-    console.log(
-      `[postprocess] Cleaning chunk ${ci + 1}/${chunks.length} (${chunk.length} segments)`,
-    );
+    console.log(`[postprocess] Cleaning chunk ${ci + 1}/${chunks.length} (${chunk.length} segments)`);
     const chunkText = chunk
       .map((s) => `[${formatTime(s.start)} - ${formatTime(s.end)}] ${s.text}`)
       .join("\n");
 
     const response = await client.messages.create({
-      model: "claude-sonnet-4-6",
+      model: MODEL,
       max_tokens: 4096,
+      output_config: {
+        format: {
+          type: "json_schema",
+          schema: chunkSchema,
+        },
+      },
       messages: [
         {
           role: "user",
@@ -91,10 +132,7 @@ Rules:
 - Keep timestamps accurate
 
 Transcript chunk:
-${chunkText}
-
-Respond with ONLY raw JSON (no markdown, no code fences, no backticks). Use this exact format:
-{"paragraphs": [{"start": 0.0, "end": 15.5, "text": "Cleaned paragraph text here."}]}`,
+${chunkText}`,
         },
       ],
     });
@@ -102,24 +140,27 @@ Respond with ONLY raw JSON (no markdown, no code fences, no backticks). Use this
     console.log(
       `[${new Date().toISOString()}] [postprocess] Chunk ${ci + 1}/${chunks.length} done (${response.usage?.input_tokens}in/${response.usage?.output_tokens}out tokens)`,
     );
-    const content = response.content[0];
+
     let chunkParagraphs: ProcessedParagraph[] = [];
 
-    if (content.type === "text") {
-      try {
-        const parsed = JSON.parse(stripCodeFence(content.text));
+    if (response.stop_reason === "end_turn") {
+      const content = response.content[0];
+      if (content.type === "text") {
+        const parsed = JSON.parse(content.text);
         chunkParagraphs = parsed.paragraphs;
-      } catch {
-        console.warn(`[postprocess] Chunk ${ci + 1} returned invalid JSON, using raw text`);
-        if (chunk.length > 0) {
-          chunkParagraphs = [
-            {
-              start: chunk[0].start,
-              end: chunk[chunk.length - 1].end,
-              text: chunk.map((s) => s.text).join(" "),
-            },
-          ];
-        }
+      }
+    } else {
+      console.warn(
+        `[postprocess] Chunk ${ci + 1} stop_reason=${response.stop_reason}, using raw text`,
+      );
+      if (chunk.length > 0) {
+        chunkParagraphs = [
+          {
+            start: chunk[0].start,
+            end: chunk[chunk.length - 1].end,
+            text: chunk.map((s) => s.text).join(" "),
+          },
+        ];
       }
     }
 
@@ -137,8 +178,14 @@ Respond with ONLY raw JSON (no markdown, no code fences, no backticks). Use this
     `[postprocess] Generating summary and chapters (${allParagraphs.length} paragraphs, ${fullText.length} chars)`,
   );
   const summaryResponse = await client.messages.create({
-    model: "claude-sonnet-4-6",
+    model: MODEL,
     max_tokens: 2048,
+    output_config: {
+      format: {
+        type: "json_schema",
+        schema: summarySchema,
+      },
+    },
     messages: [
       {
         role: "user",
@@ -147,13 +194,7 @@ Respond with ONLY raw JSON (no markdown, no code fences, no backticks). Use this
 Transcript:
 ${fullText}
 
-Respond with ONLY raw JSON (no markdown, no code fences, no backticks). Use this exact format:
-{
-  "summary": "A 2-3 paragraph summary of the podcast episode.",
-  "chapters": [
-    {"title": "Chapter title", "timestamp": 0.0}
-  ]
-}
+For the summary: write 2-3 paragraphs summarizing the podcast episode.
 
 For chapters:
 - Create 4-8 chapters based on topic shifts
@@ -169,16 +210,18 @@ For chapters:
   console.log(
     `[postprocess] Summary done (${summaryResponse.usage?.input_tokens}in/${summaryResponse.usage?.output_tokens}out tokens)`,
   );
-  const summaryContent = summaryResponse.content[0];
-  if (summaryContent.type === "text") {
-    try {
-      const parsed = JSON.parse(stripCodeFence(summaryContent.text));
+
+  if (summaryResponse.stop_reason === "end_turn") {
+    const summaryContent = summaryResponse.content[0];
+    if (summaryContent.type === "text") {
+      const parsed = JSON.parse(summaryContent.text);
       summary = parsed.summary;
       chapters = parsed.chapters;
-    } catch {
-      summary = "Summary generation failed.";
-      chapters = [{ title: "Full Episode", timestamp: 0 }];
     }
+  } else {
+    console.warn(`[postprocess] Summary stop_reason=${summaryResponse.stop_reason}`);
+    summary = "Summary generation failed.";
+    chapters = [{ title: "Full Episode", timestamp: 0 }];
   }
 
   if (progress) {
