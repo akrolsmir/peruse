@@ -3,7 +3,7 @@ import { ConvexHttpClient } from "convex/browser";
 import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
 import { validateAudioUrl } from "@/lib/audio";
-import { createASR } from "@/lib/transcribe";
+import { createASR, type ASRModel } from "@/lib/transcribe";
 import { postProcess } from "@/lib/postprocess";
 
 function getConvex() {
@@ -11,19 +11,20 @@ function getConvex() {
 }
 
 export async function POST(req: NextRequest) {
-  const { episodeId, url } = await req.json();
+  const { episodeId, url, model } = await req.json();
   const id = episodeId as Id<"episodes">;
+  const asrModel = (model || "whisper") as ASRModel;
 
   // Run pipeline in background — don't await the full thing
   // so the client gets an immediate response
-  processPipeline(id, url).catch((err) => {
+  processPipeline(id, url, asrModel).catch((err) => {
     console.error("Pipeline error:", err);
   });
 
   return NextResponse.json({ ok: true });
 }
 
-async function processPipeline(id: Id<"episodes">, url: string) {
+async function processPipeline(id: Id<"episodes">, url: string, model: ASRModel) {
   try {
     // Step 1: Validate audio URL
     await getConvex().mutation(api.episodes.updateStatus, {
@@ -44,7 +45,7 @@ async function processPipeline(id: Id<"episodes">, url: string) {
       status: "transcribing",
     });
 
-    const asr = createASR();
+    const asr = createASR(model);
     const segments = await asr.transcribe(audioUrl);
     const rawTranscript = JSON.stringify(segments);
 

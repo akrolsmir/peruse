@@ -5,12 +5,27 @@ import { useRouter } from "next/navigation";
 import { useMutation } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import { slugify } from "@/lib/slugify";
+import type { ASRModel } from "@/lib/transcribe";
+
+const models: { value: ASRModel; label: string; description: string }[] = [
+  {
+    value: "whisper",
+    label: "Whisper Large v3",
+    description: "Fast, reliable, handles long files well",
+  },
+  {
+    value: "canary-qwen",
+    label: "Canary-Qwen 2.5B",
+    description: "Lower word error rate, may struggle with long files",
+  },
+];
 
 export function UploadForm() {
   const router = useRouter();
   const createEpisode = useMutation(api.episodes.create);
   const [url, setUrl] = useState("");
   const [title, setTitle] = useState("");
+  const [model, setModel] = useState<ASRModel>("whisper");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
@@ -37,7 +52,7 @@ export function UploadForm() {
       await fetch("/api/process", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ episodeId, url: url.trim() }),
+        body: JSON.stringify({ episodeId, url: url.trim(), model }),
       });
 
       router.push("/");
@@ -84,6 +99,39 @@ export function UploadForm() {
           className="w-full rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm text-zinc-900 placeholder:text-zinc-400 focus:border-zinc-400 focus:outline-none dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100"
         />
       </div>
+
+      <fieldset>
+        <legend className="mb-2 block text-sm font-medium text-zinc-700 dark:text-zinc-300">
+          Transcription Model
+        </legend>
+        <div className="space-y-2">
+          {models.map((m) => (
+            <label
+              key={m.value}
+              className={`flex cursor-pointer items-start gap-3 rounded-lg border p-3 transition-colors ${
+                model === m.value
+                  ? "border-zinc-900 bg-zinc-50 dark:border-zinc-100 dark:bg-zinc-900"
+                  : "border-zinc-200 hover:bg-zinc-50 dark:border-zinc-700 dark:hover:bg-zinc-900"
+              }`}
+            >
+              <input
+                type="radio"
+                name="model"
+                value={m.value}
+                checked={model === m.value}
+                onChange={() => setModel(m.value)}
+                className="mt-0.5"
+              />
+              <div>
+                <span className="text-sm font-medium text-zinc-900 dark:text-zinc-100">
+                  {m.label}
+                </span>
+                <p className="text-xs text-zinc-500">{m.description}</p>
+              </div>
+            </label>
+          ))}
+        </div>
+      </fieldset>
 
       {error && (
         <p className="text-sm text-red-600 dark:text-red-400">{error}</p>
