@@ -6,7 +6,7 @@ export interface TranscriptSegment {
   text: string;
 }
 
-export type ASRModel = "whisper" | "canary-qwen";
+export type ASRModel = "whisper" | "canary-qwen" | "whisperx";
 
 export interface ASRProvider {
   transcribe(audioUrl: string): Promise<TranscriptSegment[]>;
@@ -114,6 +114,54 @@ class CanaryQwenASR implements ASRProvider {
   }
 }
 
+// --- WhisperX ---
+
+const WHISPERX_VERSION =
+  "victor-upmeet/whisperx:84d2ad2d6194fe98a17d2b60bef1c7f910c46b2f6fd38996ca457afd9c8abfcb";
+
+interface WhisperXSegment {
+  start: number;
+  end: number;
+  text: string;
+  speaker?: string;
+}
+
+interface WhisperXOutput {
+  segments: WhisperXSegment[];
+  detected_language: string;
+}
+
+class WhisperXASR implements ASRProvider {
+  private client: Replicate;
+
+  constructor(client: Replicate) {
+    this.client = client;
+  }
+
+  async transcribe(audioUrl: string): Promise<TranscriptSegment[]> {
+    const output = (await this.client.run(WHISPERX_VERSION, {
+      input: {
+        audio_file: audioUrl,
+        language: "en",
+        diarization: true,
+        align_output: true,
+        batch_size: 16,
+        huggingface_access_token: process.env.HUGGINGFACE_API_KEY,
+      },
+    })) as WhisperXOutput;
+
+    if (output.segments && Array.isArray(output.segments)) {
+      return output.segments.map((seg) => ({
+        start: seg.start,
+        end: seg.end,
+        text: seg.speaker ? `[${seg.speaker}] ${seg.text.trim()}` : seg.text.trim(),
+      }));
+    }
+
+    return [{ start: 0, end: 0, text: JSON.stringify(output) }];
+  }
+}
+
 // --- Factory ---
 
 export function createASR(model: ASRModel = "whisper"): ASRProvider {
@@ -121,6 +169,8 @@ export function createASR(model: ASRModel = "whisper"): ASRProvider {
   switch (model) {
     case "canary-qwen":
       return new CanaryQwenASR(client);
+    case "whisperx":
+      return new WhisperXASR(client);
     case "whisper":
     default:
       return new WhisperASR(client);

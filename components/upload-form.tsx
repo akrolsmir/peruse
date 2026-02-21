@@ -18,6 +18,11 @@ const models: { value: ASRModel; label: string; description: string }[] = [
     label: "Canary-Qwen 2.5B",
     description: "Lower word error rate, may struggle with long files",
   },
+  {
+    value: "whisperx",
+    label: "WhisperX Large v3",
+    description: "Word-level timestamps with speaker diarization",
+  },
 ];
 
 export function UploadForm() {
