@@ -11,7 +11,7 @@ interface Episode {
   title: string;
   slug: string;
   status: string;
-  rawTranscript?: string;
+  hasRawTranscript: boolean;
   createdAt: number;
 }
 
@@ -25,7 +25,7 @@ export function EpisodeCard({ episode }: { episode: Episode }) {
     year: "numeric",
   });
 
-  const hasTranscript = !!episode.rawTranscript;
+  const hasTranscript = episode.hasRawTranscript;
 
   const handleReprocess = async (e: React.MouseEvent) => {
     e.preventDefault();

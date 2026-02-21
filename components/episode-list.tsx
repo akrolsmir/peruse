@@ -51,16 +51,7 @@ export function EpisodeList() {
       {episodes.map((ep) => (
         <EpisodeCard
           key={ep._id}
-          episode={
-            ep as unknown as {
-              _id: string;
-              title: string;
-              slug: string;
-              status: string;
-              rawTranscript?: string;
-              createdAt: number;
-            }
-          }
+          episode={ep}
         />
       ))}
     </div>

@@ -3,7 +3,15 @@ import { v } from "convex/values";
 
 export const list = query({
   handler: async (ctx) => {
-    return await ctx.db.query("episodes").order("desc").collect();
+    const episodes = await ctx.db.query("episodes").order("desc").collect();
+    return episodes.map((ep) => ({
+      _id: ep._id,
+      title: ep.title,
+      slug: ep.slug,
+      status: ep.status,
+      hasRawTranscript: !!ep.rawTranscript,
+      createdAt: ep.createdAt,
+    }));
   },
 });
 
