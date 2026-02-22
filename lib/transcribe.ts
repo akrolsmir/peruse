@@ -148,6 +148,8 @@ class WhisperXASR implements ASRProvider {
       audio_file: audioUrl,
       language: "en",
       diarization: true,
+      // We don't currently use word-level timestamps, but aligning output improves diarization accuracy
+      align_output: true,
       batch_size: 32,
       huggingface_access_token: process.env.HUGGINGFACE_API_KEY,
     };
