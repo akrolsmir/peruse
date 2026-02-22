@@ -17,8 +17,10 @@ TODOs:
   - could add clarifications eg "SWE (Software Engineer)" in parenthesis, augment eg "Holden [Karnofsky]" in brackets.
   - Could link to jargon
 
-- player improvements: 
-- 
+- player improvements: variable speed, 
+- longterm:
+  - Search interface over popular podcasts (eg via listennotes api? or start with a few RSS feeds?)
+  - Suggest fixes (to implement via claude code?)
 
 ## How it works
 
