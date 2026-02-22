@@ -39,31 +39,39 @@ export function TranscriptView({
   onSeek,
 }: TranscriptViewProps) {
   return (
-    <div className="space-y-1">
+    <div className="relative pl-14">
       {paragraphs.map((p, i) => {
         const isActive = currentTime >= p.start && currentTime < p.end;
         const speaker = resolveSpeaker(p.speaker, speakerNames);
+        const prevSpeaker = i > 0 ? resolveSpeaker(paragraphs[i - 1].speaker, speakerNames) : null;
+        const showSpeaker = speaker !== null && speaker !== prevSpeaker;
+
         return (
-          <div
-            key={i}
-            className={`border-l-2 py-3 pl-4 pr-2 transition-colors duration-300 ${
-              isActive
-                ? "border-amber-500 bg-amber-50/60 dark:bg-amber-950/20"
-                : "border-transparent hover:border-zinc-200 hover:bg-zinc-50/50 dark:hover:border-zinc-700 dark:hover:bg-zinc-900/50"
-            }`}
-          >
-            <button
-              onClick={() => onSeek(p.start)}
-              className="mb-1.5 font-mono text-[11px] tabular-nums text-amber-600 transition-colors hover:text-amber-500 dark:text-amber-400 dark:hover:text-amber-300"
-            >
-              {formatTimestamp(p.start)}
-            </button>
-            {speaker && (
-              <span className="mb-1 block text-xs font-bold text-zinc-800 dark:text-zinc-200">
+          <div key={i} className={showSpeaker && i > 0 ? "mt-6" : ""}>
+            {showSpeaker && (
+              <div className="mb-1 text-xs font-semibold text-zinc-900 dark:text-zinc-100">
                 {speaker}
-              </span>
+              </div>
             )}
-            <p className="font-serif text-zinc-600 dark:text-zinc-300">{p.text}</p>
+            <div
+              className={`group relative border-l-2 py-2.5 pl-4 pr-2 transition-colors duration-200 ${
+                isActive
+                  ? "border-amber-500 bg-amber-50/60 dark:bg-amber-950/20"
+                  : "border-transparent hover:border-zinc-200 hover:bg-zinc-50/80 dark:hover:border-zinc-700 dark:hover:bg-zinc-900/50"
+              }`}
+            >
+              <button
+                onClick={() => onSeek(p.start)}
+                className={`absolute -left-22 top-0 bottom-0 flex w-24 cursor-pointer items-start justify-end pr-6 pt-3 font-mono text-[11px] tabular-nums transition-opacity duration-200 ${
+                  isActive
+                    ? "text-amber-600 opacity-100 dark:text-amber-400"
+                    : "text-zinc-400 opacity-0 hover:text-amber-500 group-hover:opacity-100 dark:text-zinc-500 dark:hover:text-amber-400"
+                }`}
+              >
+                {formatTimestamp(p.start)}
+              </button>
+              <p className="font-serif leading-relaxed text-zinc-600 dark:text-zinc-300">{p.text}</p>
+            </div>
           </div>
         );
       })}
