@@ -39,7 +39,7 @@ export function TranscriptView({
   onSeek,
 }: TranscriptViewProps) {
   return (
-    <div className="relative pl-14">
+    <div className="relative">
       {paragraphs.map((p, i) => {
         const isActive = currentTime >= p.start && currentTime < p.end;
         const speaker = resolveSpeaker(p.speaker, speakerNames);
