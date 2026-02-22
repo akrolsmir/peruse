@@ -49,7 +49,7 @@ export function TranscriptView({
         return (
           <div key={i} className={showSpeaker && i > 0 ? "mt-6" : ""}>
             {showSpeaker && (
-              <div className="mb-1 text-xs font-semibold text-zinc-900 dark:text-zinc-100">
+              <div className="mb-1 text-sm font-semibold text-zinc-900 dark:text-zinc-100">
                 {speaker}
               </div>
             )}
@@ -70,7 +70,7 @@ export function TranscriptView({
               >
                 {formatTimestamp(p.start)}
               </button>
-              <p className="font-serif leading-relaxed text-zinc-600 dark:text-zinc-300">{p.text}</p>
+              <p className="font-serif text-lg leading-relaxed text-zinc-600 dark:text-zinc-300">{p.text}</p>
             </div>
           </div>
         );
