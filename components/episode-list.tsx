@@ -49,10 +49,7 @@ export function EpisodeList() {
   return (
     <div className="space-y-2">
       {episodes.map((ep) => (
-        <EpisodeCard
-          key={ep._id}
-          episode={ep}
-        />
+        <EpisodeCard key={ep._id} episode={ep} />
       ))}
     </div>
   );

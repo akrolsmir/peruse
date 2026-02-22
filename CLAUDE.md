@@ -23,6 +23,7 @@ No test suite is configured.
 **Processing pipeline:** Upload URL/file → create Convex episode (pending) → fire-and-forget POST to `/api/process` → transcribe via Replicate → post-process with Claude → store results in Convex. Status progresses: `pending` → `downloading` → `transcribing` → `processing` → `done` (or `error`).
 
 **Key directories:**
+
 - `app/` — Next.js app router pages and API routes
 - `app/api/process/route.ts` — main transcription pipeline
 - `app/api/reprocess/route.ts` — re-run Claude post-processing only
@@ -40,6 +41,7 @@ No test suite is configured.
 ## Environment Variables
 
 Required in `.env.local`:
+
 - `REPLICATE_API_TOKEN` — Replicate API for ASR models
 - `ANTHROPIC_API_KEY` — Claude API for post-processing
 - `NEXT_PUBLIC_CONVEX_URL` — Convex frontend URL (public)
