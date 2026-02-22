@@ -32,21 +32,39 @@ export const getBySlug = query({
   },
 });
 
+export const generateUploadUrl = mutation({
+  handler: async (ctx) => {
+    return await ctx.storage.generateUploadUrl();
+  },
+});
+
 export const create = mutation({
   args: {
     title: v.string(),
-    url: v.string(),
+    url: v.optional(v.string()),
     slug: v.string(),
+    storageId: v.optional(v.id("_storage")),
   },
   handler: async (ctx, args) => {
+    let url = args.url ?? "";
+    let audioUrl: string | undefined;
+
+    if (args.storageId) {
+      const servingUrl = await ctx.storage.getUrl(args.storageId);
+      if (!servingUrl) throw new Error("Failed to get URL for uploaded file");
+      url = servingUrl;
+      audioUrl = servingUrl;
+    }
+
     const id = await ctx.db.insert("episodes", {
       title: args.title,
-      url: args.url,
+      url,
       slug: args.slug,
       status: "pending",
       createdAt: Date.now(),
+      ...(audioUrl ? { audioUrl } : {}),
     });
-    return id;
+    return { id, audioUrl };
   },
 });
 

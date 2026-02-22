@@ -15,7 +15,17 @@ export async function POST(req: NextRequest) {
   const id = episodeId as Id<"episodes">;
   const asrModel = (model || "whisper") as ASRModel;
 
-  processPipeline(id, url, asrModel).catch((err) => {
+  // If no URL provided, fetch it from the episode record
+  let audioSource = url as string | undefined;
+  if (!audioSource) {
+    const episode = await getConvex().query(api.episodes.getById, { id });
+    audioSource = episode?.audioUrl || episode?.url;
+  }
+  if (!audioSource) {
+    return NextResponse.json({ error: "No audio URL" }, { status: 400 });
+  }
+
+  processPipeline(id, audioSource, asrModel).catch((err) => {
     console.error("Pipeline error:", err);
   });
 
@@ -29,7 +39,9 @@ async function processPipeline(id: Id<"episodes">, url: string, model: ASRModel)
       status: "downloading",
     });
 
-    const audioUrl = await validateAudioUrl(url);
+    // Skip validation for Convex storage URLs — they're already direct links
+    const isConvexUrl = url.includes(".convex.cloud/");
+    const audioUrl = isConvexUrl ? url : await validateAudioUrl(url);
     await getConvex().mutation(api.episodes.updateStatus, {
       id,
       status: "downloading",
