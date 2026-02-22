@@ -1,3 +1,21 @@
+### Speakers prompt
+
+Let's update the flow and code to better support a conversational podcast-like transcript. With  
+ whisperx, we get speaker diarization as an output, which comes out as SPEAKER_00 or SPEAKER_01,  
+ etc. Let's:\\
+
+- When whisperx is selected, allow user to input the number of speakers, which we pass in as  
+  min_speakers
+- Store speaker identity in the raw transcript on a per-segment level\\
+- Add a "speaker_names" array in the episodes table eg ['alice', bob'] etc maps to SPEAKER_00,  
+  SPEAKER_01, etc.\
+- Update postprocess summary step to also have the llm generate output a likely list of  
+  speaker_names, which we store into convex\
+- Update all processing code and prompts so that paragraphs never combine segments from two  
+  different speakers\\
+- In Cleaned transcript view, show the identity of the speaker of each paragraph by prepending with  
+  in bold, eg. "Alice Keys: ..."
+
 # PTT (Podcast to Text) - Implementation Plan
 
 ## Context

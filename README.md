@@ -5,12 +5,17 @@ Example URL: https://episodes.captivate.fm/episode/e45099d6-5d22-49e4-b8fd-def40
 (todo: load a short, med, long snippet into default example)
 
 choosing an ASR model off of replicate:
+
 - vaibhavs10/incredibly-fast-whisper has a very fast cold start, but maybe slower RTF (real-time factor).
 - nvidia/canary-qwen-2.5b on replicate has a limit of 120 minutes: https://github.com/zsxkib/cog-nvidia-canary-qwen-2.5b/blob/09ea034bdc4d930940b8d3ca0f4d499c181809af/predict.py#L86. also a very long replicate startup, like a minute or so
-- todo: maybe victor-upmeet/whisperx for built in diarisation
+- victor-upmeet/whisperx for built in diarisation. approx 4min/1cent
 
 - todo: for postprocessing, compare json structured output to previous (non-json) -- the timestamps seem off more often now.
 - todo: maybe switch to medium effort for faster responses?
+
+- todo: change postprocessing to create something more 80k-style. Dialog not timestamp-first; conversational but still easy to read.
+  - could add clarifications eg "SWE (Software Engineer)" in parenthesis, augment eg "Holden [Karnofsky]" in brackets.
+  - Could link to jargon
 
 ## How it works
 
