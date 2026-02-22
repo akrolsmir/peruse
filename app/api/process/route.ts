@@ -11,7 +11,7 @@ function getConvex() {
 }
 
 export async function POST(req: NextRequest) {
-  const { episodeId, url, model } = await req.json();
+  const { episodeId, url, model, minSpeakers } = await req.json();
   const id = episodeId as Id<"episodes">;
   const asrModel = (model || "whisper") as ASRModel;
 
@@ -25,14 +25,19 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "No audio URL" }, { status: 400 });
   }
 
-  processPipeline(id, audioSource, asrModel).catch((err) => {
+  processPipeline(id, audioSource, asrModel, minSpeakers as number | undefined).catch((err) => {
     console.error("Pipeline error:", err);
   });
 
   return NextResponse.json({ ok: true });
 }
 
-async function processPipeline(id: Id<"episodes">, url: string, model: ASRModel) {
+async function processPipeline(
+  id: Id<"episodes">,
+  url: string,
+  model: ASRModel,
+  minSpeakers?: number,
+) {
   try {
     await getConvex().mutation(api.episodes.updateStatus, {
       id,
@@ -54,7 +59,7 @@ async function processPipeline(id: Id<"episodes">, url: string, model: ASRModel)
     });
 
     const asr = createASR(model);
-    const segments = await asr.transcribe(audioUrl);
+    const segments = await asr.transcribe(audioUrl, { minSpeakers });
     const rawTranscript = JSON.stringify(segments);
 
     await getConvex().mutation(api.episodes.update, {
@@ -74,12 +79,13 @@ async function processPipeline(id: Id<"episodes">, url: string, model: ASRModel)
           transcript: JSON.stringify(paragraphs),
         });
       },
-      async onSummaryDone(summary, chapters) {
+      async onSummaryDone(summary, chapters, speakerNames) {
         await getConvex().mutation(api.episodes.update, {
           id,
           summary,
           chapters: JSON.stringify(chapters),
           status: "done",
+          ...(speakerNames.length > 0 ? { speakerNames } : {}),
         });
       },
     });

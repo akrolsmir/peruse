@@ -41,12 +41,13 @@ async function reprocessPipeline(id: Id<"episodes">) {
           transcript: JSON.stringify(paragraphs),
         });
       },
-      async onSummaryDone(summary, chapters) {
+      async onSummaryDone(summary, chapters, speakerNames) {
         await getConvex().mutation(api.episodes.update, {
           id,
           summary,
           chapters: JSON.stringify(chapters),
           status: "done",
+          ...(speakerNames.length > 0 ? { speakerNames } : {}),
         });
       },
     });

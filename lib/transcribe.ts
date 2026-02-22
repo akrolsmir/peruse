@@ -4,12 +4,17 @@ export interface TranscriptSegment {
   start: number;
   end: number;
   text: string;
+  speaker?: string;
 }
 
 export type ASRModel = "whisper" | "canary-qwen" | "whisperx";
 
+export interface ASROptions {
+  minSpeakers?: number;
+}
+
 export interface ASRProvider {
-  transcribe(audioUrl: string): Promise<TranscriptSegment[]>;
+  transcribe(audioUrl: string, options?: ASROptions): Promise<TranscriptSegment[]>;
 }
 
 // --- Whisper ---
@@ -138,23 +143,26 @@ class WhisperXASR implements ASRProvider {
     this.client = client;
   }
 
-  async transcribe(audioUrl: string): Promise<TranscriptSegment[]> {
-    const output = (await this.client.run(WHISPERX_VERSION, {
-      input: {
-        audio_file: audioUrl,
-        language: "en",
-        diarization: true,
-        align_output: true,
-        batch_size: 16,
-        huggingface_access_token: process.env.HUGGINGFACE_API_KEY,
-      },
-    })) as WhisperXOutput;
+  async transcribe(audioUrl: string, options?: ASROptions): Promise<TranscriptSegment[]> {
+    const input: Record<string, unknown> = {
+      audio_file: audioUrl,
+      language: "en",
+      diarization: true,
+      batch_size: 32,
+      huggingface_access_token: process.env.HUGGINGFACE_API_KEY,
+    };
+    if (options?.minSpeakers) {
+      input.min_speakers = options.minSpeakers;
+    }
+
+    const output = (await this.client.run(WHISPERX_VERSION, { input })) as WhisperXOutput;
 
     if (output.segments && Array.isArray(output.segments)) {
       return output.segments.map((seg) => ({
         start: seg.start,
         end: seg.end,
-        text: seg.speaker ? `[${seg.speaker}] ${seg.text.trim()}` : seg.text.trim(),
+        text: seg.text.trim(),
+        speaker: seg.speaker,
       }));
     }
 

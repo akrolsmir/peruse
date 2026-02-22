@@ -20,6 +20,7 @@ export default defineSchema({
     transcript: v.optional(v.string()),
     summary: v.optional(v.string()),
     chapters: v.optional(v.string()),
+    speakerNames: v.optional(v.array(v.string())),
     createdAt: v.number(),
   }).index("by_slug", ["slug"]),
 });

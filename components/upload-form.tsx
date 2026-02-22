@@ -37,11 +37,11 @@ export function UploadForm() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [title, setTitle] = useState("");
   const [model, setModel] = useState<ASRModel>("whisper");
+  const [minSpeakers, setMinSpeakers] = useState(2);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
-  const canSubmit =
-    !loading && (sourceMode === "url" ? url.trim() !== "" : file !== null);
+  const canSubmit = !loading && (sourceMode === "url" ? url.trim() !== "" : file !== null);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -66,12 +66,18 @@ export function UploadForm() {
         await fetch("/api/process", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ episodeId, url: url.trim(), model }),
+          body: JSON.stringify({
+            episodeId,
+            url: url.trim(),
+            model,
+            ...(model === "whisperx" ? { minSpeakers } : {}),
+          }),
         });
       } else {
         if (!file) return;
 
-        const episodeTitle = title.trim() || file.name.replace(/\.[^.]+$/, "") || "Untitled Episode";
+        const episodeTitle =
+          title.trim() || file.name.replace(/\.[^.]+$/, "") || "Untitled Episode";
         const slug = slugify(episodeTitle) + "-" + Date.now().toString(36);
 
         // Upload file to Convex storage
@@ -95,7 +101,12 @@ export function UploadForm() {
         await fetch("/api/process", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ episodeId, url: audioUrl, model }),
+          body: JSON.stringify({
+            episodeId,
+            url: audioUrl,
+            model,
+            ...(model === "whisperx" ? { minSpeakers } : {}),
+          }),
         });
       }
 
@@ -238,6 +249,26 @@ export function UploadForm() {
           ))}
         </div>
       </fieldset>
+
+      {model === "whisperx" && (
+        <div>
+          <label
+            htmlFor="minSpeakers"
+            className="mb-2 block text-xs font-semibold uppercase tracking-widest text-zinc-400"
+          >
+            Number of Speakers
+          </label>
+          <input
+            id="minSpeakers"
+            type="number"
+            min={1}
+            max={20}
+            value={minSpeakers}
+            onChange={(e) => setMinSpeakers(Math.max(1, parseInt(e.target.value) || 1))}
+            className="w-24 rounded-xl border border-zinc-200 bg-white px-4 py-3 text-sm text-zinc-900 transition-colors focus:border-amber-500 focus:outline-none focus:ring-1 focus:ring-amber-500/20 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-100"
+          />
+        </div>
+      )}
 
       {error && (
         <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-red-900/50 dark:bg-red-950/20 dark:text-red-400">

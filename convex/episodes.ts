@@ -118,6 +118,7 @@ export const update = mutation({
     transcript: v.optional(v.string()),
     summary: v.optional(v.string()),
     chapters: v.optional(v.string()),
+    speakerNames: v.optional(v.array(v.string())),
     status: v.optional(
       v.union(
         v.literal("pending"),

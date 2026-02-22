@@ -57,6 +57,7 @@ export function EpisodeDetail({ slug }: { slug: string }) {
   const paragraphs = episode.transcript ? JSON.parse(episode.transcript) : [];
   const chapters: Chapter[] = episode.chapters ? JSON.parse(episode.chapters) : [];
   const rawSegments = episode.rawTranscript ? JSON.parse(episode.rawTranscript) : [];
+  const speakerNames: string[] | undefined = episode.speakerNames ?? undefined;
   const audioUrl = episode.audioUrl || episode.url;
   const showPlayer = hasContent || paragraphs.length > 0;
   const hasRaw = rawSegments.length > 0;
@@ -204,6 +205,7 @@ export function EpisodeDetail({ slug }: { slug: string }) {
                     <SyncedTranscriptView
                       paragraphs={paragraphs}
                       segments={rawSegments}
+                      speakerNames={speakerNames}
                       currentTime={currentTime}
                       onSeek={handleSeek}
                     />
@@ -218,6 +220,7 @@ export function EpisodeDetail({ slug }: { slug: string }) {
               ) : paragraphs.length > 0 ? (
                 <TranscriptView
                   paragraphs={paragraphs}
+                  speakerNames={speakerNames}
                   currentTime={currentTime}
                   onSeek={handleSeek}
                 />

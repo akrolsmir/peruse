@@ -5,6 +5,7 @@ export interface ProcessedParagraph {
   start: number;
   end: number;
   text: string;
+  speaker?: string;
 }
 
 export interface Chapter {
@@ -16,6 +17,7 @@ export interface PostProcessedResult {
   paragraphs: ProcessedParagraph[];
   summary: string;
   chapters: Chapter[];
+  speakerNames: string[];
 }
 
 export interface ProgressCallback {
@@ -24,7 +26,7 @@ export interface ProgressCallback {
     chunkIndex: number,
     totalChunks: number,
   ): Promise<void>;
-  onSummaryDone(summary: string, chapters: Chapter[]): Promise<void>;
+  onSummaryDone(summary: string, chapters: Chapter[], speakerNames: string[]): Promise<void>;
 }
 
 // const MODEL = "claude-haiku-4-5-20251001";
@@ -42,6 +44,7 @@ const chunkSchema = {
           start: { type: "number" as const },
           end: { type: "number" as const },
           text: { type: "string" as const },
+          speaker: { type: "string" as const },
         },
         required: ["start", "end", "text"] as const,
         additionalProperties: false,
@@ -68,8 +71,12 @@ const summarySchema = {
         additionalProperties: false,
       },
     },
+    speaker_names: {
+      type: "array" as const,
+      items: { type: "string" as const },
+    },
   },
-  required: ["summary", "chapters"] as const,
+  required: ["summary", "chapters", "speaker_names"] as const,
   additionalProperties: false,
 };
 
@@ -95,18 +102,32 @@ function chunkSegments(segments: TranscriptSegment[]): TranscriptSegment[][] {
 export async function postProcess(
   segments: TranscriptSegment[],
   progress?: ProgressCallback,
+  options?: { speakerNames?: string[] },
 ): Promise<PostProcessedResult> {
   const client = new Anthropic();
+  const hasSpeakers = segments.some((s) => s.speaker);
 
   const chunks = chunkSegments(segments);
   const allParagraphs: ProcessedParagraph[] = [];
 
   for (let ci = 0; ci < chunks.length; ci++) {
     const chunk = chunks[ci];
-    console.log(`[postprocess] Cleaning chunk ${ci + 1}/${chunks.length} (${chunk.length} segments)`);
+    console.log(
+      `[postprocess] Cleaning chunk ${ci + 1}/${chunks.length} (${chunk.length} segments)`,
+    );
     const chunkText = chunk
-      .map((s) => `[${formatTime(s.start)} - ${formatTime(s.end)}] ${s.text}`)
+      .map((s) => {
+        const prefix = s.speaker ? ` [${s.speaker}]` : "";
+        return `[${formatTime(s.start)} - ${formatTime(s.end)}]${prefix} ${s.text}`;
+      })
       .join("\n");
+
+    const speakerRules = hasSpeakers
+      ? `
+- Each paragraph MUST have a "speaker" field with the speaker label (e.g. "SPEAKER_00")
+- NEVER combine text from different speakers into one paragraph — a speaker change always means a new paragraph
+- Preserve the speaker label exactly as given`
+      : "";
 
     const response = await client.messages.create({
       model: MODEL,
@@ -129,7 +150,7 @@ Rules:
 - Fix obvious speech recognition errors
 - Group related sentences into paragraphs (3-6 sentences each)
 - Preserve the speaker's meaning and tone
-- Keep timestamps accurate
+- Keep timestamps accurate${speakerRules}
 
 Transcript chunk:
 ${chunkText}`,
@@ -172,7 +193,18 @@ ${chunkText}`,
   }
 
   // Generate summary and chapters
-  const fullText = allParagraphs.map((p) => p.text).join("\n\n");
+  const fullText = allParagraphs
+    .map((p) => {
+      const prefix = p.speaker ? `[${p.speaker}] ` : "";
+      return `${prefix}${p.text}`;
+    })
+    .join("\n\n");
+
+  const speakerNamesInstruction = hasSpeakers
+    ? `
+
+For speaker_names: The transcript has speaker labels like SPEAKER_00, SPEAKER_01, etc. Infer the real name of each speaker from context (introductions, references to each other). Return an array where index 0 is SPEAKER_00's name, index 1 is SPEAKER_01's name, etc. If you cannot determine a name, use the raw label (e.g. "SPEAKER_00").`
+    : "";
 
   console.log(
     `[postprocess] Generating summary and chapters (${allParagraphs.length} paragraphs, ${fullText.length} chars)`,
@@ -199,13 +231,14 @@ For the summary: write 2-3 paragraphs summarizing the podcast episode.
 For chapters:
 - Create 4-8 chapters based on topic shifts
 - Use descriptive titles
-- Timestamps should correspond to where that topic begins (in seconds)`,
+- Timestamps should correspond to where that topic begins (in seconds)${speakerNamesInstruction}`,
       },
     ],
   });
 
   let summary = "";
   let chapters: Chapter[] = [];
+  let speakerNames: string[] = [];
 
   console.log(
     `[postprocess] Summary done (${summaryResponse.usage?.input_tokens}in/${summaryResponse.usage?.output_tokens}out tokens)`,
@@ -217,6 +250,7 @@ For chapters:
       const parsed = JSON.parse(summaryContent.text);
       summary = parsed.summary;
       chapters = parsed.chapters;
+      speakerNames = parsed.speaker_names || [];
     }
   } else {
     console.warn(`[postprocess] Summary stop_reason=${summaryResponse.stop_reason}`);
@@ -225,10 +259,10 @@ For chapters:
   }
 
   if (progress) {
-    await progress.onSummaryDone(summary, chapters);
+    await progress.onSummaryDone(summary, chapters, speakerNames);
   }
 
-  return { paragraphs: allParagraphs, summary, chapters };
+  return { paragraphs: allParagraphs, summary, chapters, speakerNames };
 }
 
 function formatTime(seconds: number): string {
