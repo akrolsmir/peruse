@@ -1,4 +1,20 @@
-### Speakers prompt
+# Prompts
+
+## Creating the app
+
+Plan a new app, codenamed "PTT" for podcast to text. Its primary function is to turn a provided podcast episode into a high quality transcript.
+
+Tech stack:\
+
+NextJS, Tailwind, Bun for frontend (already provided)\
+Convex for storing data, transcripts\
+Replicate serving nvidia/canary-qwen-2.5b for the ASR model (but set things up so we can easily swap to others)\
+Anthropic Claude Sonnet 4.6 for postprocessing (to remove filler words, fix incoherent things, and others to come later)\
+All JS backend via NextJS
+
+The core UI should start with a homepage of all uploaded podcasts; a page "/upload" which allows someone to input a podcast URL; and a page "/ep/<episode-title>" which shows the postprocessed transcript, complete with an inline player, summary, outline/chapter titles, and paragraph-level timestamps.
+
+### Supporting speakers
 
 Let's update the flow and code to better support a conversational podcast-like transcript. With  
  whisperx, we get speaker diarization as an output, which comes out as SPEAKER_00 or SPEAKER_01,  
@@ -16,7 +32,20 @@ Let's update the flow and code to better support a conversational podcast-like t
 - In Cleaned transcript view, show the identity of the speaker of each paragraph by prepending with  
   in bold, eg. "Alice Keys: ..."
 
-# Peruse - Implementation Plan
+## RSS prompt
+
+New feature: RSS feeds.\
+
+- Allow users to paste in a podcast rss feed url, on a new page /new-rss
+- Store rss feed data into a new convex table\
+- Create /rss, which displays all rss feeds\
+- Under /rss/<slug>, create a nice display to view all current episodes\
+  - Add a button which, on click, takes the user /upload with the episode url and metadata filled in\
+- Relatedly, add a new optional field "description" on the episodes table, and an optional backlink to a particular rss feed\  
+  \  
+  ask me any questions you need to cleanly structure this from a codebase and data perspective
+
+# Peruse - Original Implementation Plan
 
 ## Context
 
