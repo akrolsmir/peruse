@@ -12,14 +12,16 @@ export async function POST(request: Request) {
 
     const feed = await parser.parseURL(url);
 
-    const episodes = (feed.items || []).map((item) => ({
-      guid: item.guid || item.link || item.title || "",
-      title: item.title || "Untitled",
-      description: item.contentSnippet || item.content || "",
-      audioUrl: item.enclosure?.url || "",
-      pubDate: item.pubDate || "",
-      duration: item.itunes?.duration || "",
-    }));
+    const episodes = (feed.items || [])
+      .slice(0, 150)
+      .map((item) => ({
+        guid: item.guid || item.link || item.title || "",
+        title: item.title || "Untitled",
+        description: item.contentSnippet || item.content || "",
+        audioUrl: item.enclosure?.url || "",
+        pubDate: item.pubDate || "",
+        duration: item.itunes?.duration || "",
+      }));
 
     return NextResponse.json({
       title: feed.title || "Untitled Feed",
