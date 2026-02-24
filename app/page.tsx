@@ -20,9 +20,9 @@ export default function Home() {
         <div className="flex items-end justify-between">
           <div>
             <h1 className="text-3xl font-bold tracking-tight text-zinc-900 dark:text-zinc-50">
-              PTT
+              peruse
             </h1>
-            <p className="mt-1 text-sm text-zinc-400">Podcast to Text</p>
+            <p className="mt-1 text-sm text-zinc-400">podcast transcripts worth reading</p>
           </div>
           <Link
             href="/upload"

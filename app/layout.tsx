@@ -19,8 +19,8 @@ const stixTwo = STIX_Two_Text({
 });
 
 export const metadata: Metadata = {
-  title: "PTT - Podcast to Text",
-  description: "Convert podcast episodes into high-quality transcripts",
+  title: "Peruse — Podcast Transcripts Worth Reading",
+  description: "Convert podcast episodes into high-quality transcripts worth reading carefully",
 };
 
 export default function RootLayout({

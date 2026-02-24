@@ -16,7 +16,7 @@ Let's update the flow and code to better support a conversational podcast-like t
 - In Cleaned transcript view, show the identity of the speaker of each paragraph by prepending with  
   in bold, eg. "Alice Keys: ..."
 
-# PTT (Podcast to Text) - Implementation Plan
+# Peruse - Implementation Plan
 
 ## Context
 

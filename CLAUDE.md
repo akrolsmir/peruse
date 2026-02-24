@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-PTT (Podcast to Text) is a Next.js 16 app that transcribes podcasts using Replicate ASR models and post-processes transcripts with Claude. It uses Convex for the database with real-time sync.
+Peruse is a Next.js 16 app that transcribes podcasts into high-quality, readable transcripts using Replicate ASR models and post-processes with Claude. It uses Convex for the database with real-time sync.
 
 ## Commands
 
