@@ -22,11 +22,15 @@ choosing an ASR model off of replicate:
 - player improvements: variable speed,
 - minor fixes:
   - show titles as headers
-  - shorter slugify
+  - shorter slugify (no cruft at end)
   - export entire thing to markdown
+  - tap to change speaker description
+    - (maybe more ways to edit things in general)
+    - big brain: speak directly with ai to change things!!
 - bugs
-  - - dropped transcript before "passion capital wins" on /social-radars-with-tom-3-speakers-align-output-mlx23ryw
-  - - fix the timestamps so they're consistent (no jumping)
+  - pass episode description as a hint to parsing
+  - dropped transcript before "passion capital wins" on /social-radars-with-tom-3-speakers-align-output-mlx23ryw
+  - fix the timestamps so they're consistent (no jumping)
 - longterm:
   - Search interface over popular podcasts (eg via listennotes api? or start with a few RSS feeds?)
   - Suggest fixes (to implement via claude code?)
