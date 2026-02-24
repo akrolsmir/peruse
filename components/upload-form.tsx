@@ -1,11 +1,12 @@
 "use client";
 
 import { useState, useRef } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useMutation } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import { slugify } from "@/lib/slugify";
 import type { ASRModel } from "@/lib/transcribe";
+import type { Id } from "@/convex/_generated/dataModel";
 
 const models: { value: ASRModel; label: string; description: string }[] = [
   {
@@ -29,17 +30,20 @@ type SourceMode = "url" | "file";
 
 export function UploadForm() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const createEpisode = useMutation(api.episodes.create);
   const generateUploadUrl = useMutation(api.episodes.generateUploadUrl);
   const [sourceMode, setSourceMode] = useState<SourceMode>("url");
-  const [url, setUrl] = useState("");
+  const [url, setUrl] = useState(searchParams.get("url") || "");
   const [file, setFile] = useState<File | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const [title, setTitle] = useState("");
+  const [title, setTitle] = useState(searchParams.get("title") || "");
   const [model, setModel] = useState<ASRModel>("whisper");
   const [minSpeakers, setMinSpeakers] = useState(2);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const feedDescription = searchParams.get("description") || undefined;
+  const feedId = searchParams.get("feedId") as Id<"feeds"> | undefined;
 
   const canSubmit = !loading && (sourceMode === "url" ? url.trim() !== "" : file !== null);
 
@@ -60,6 +64,8 @@ export function UploadForm() {
           title: episodeTitle,
           url: url.trim(),
           slug,
+          description: feedDescription,
+          feedId: feedId || undefined,
         });
         const episodeId = (result as { id: string }).id;
 
@@ -95,6 +101,8 @@ export function UploadForm() {
           title: episodeTitle,
           slug,
           storageId,
+          description: feedDescription,
+          feedId: feedId || undefined,
         });
         const { id: episodeId, audioUrl } = result as { id: string; audioUrl: string };
 

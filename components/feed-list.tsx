@@ -3,12 +3,12 @@
 import Link from "next/link";
 import { useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
-import { EpisodeCard } from "@/components/episode-card";
+import { FeedCard } from "@/components/feed-card";
 
-export function EpisodeList({ recent }: { recent?: boolean }) {
-  const episodes = useQuery(recent ? api.episodes.listRecent : api.episodes.list);
+export function FeedList({ recent }: { recent?: boolean }) {
+  const feeds = useQuery(recent ? api.feeds.listRecent : api.feeds.list);
 
-  if (episodes === undefined) {
+  if (feeds === undefined) {
     return (
       <div className="flex items-center justify-center gap-2 py-24">
         <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-zinc-400" />
@@ -17,7 +17,7 @@ export function EpisodeList({ recent }: { recent?: boolean }) {
     );
   }
 
-  if (episodes.length === 0) {
+  if (feeds.length === 0) {
     return (
       <div className="rounded-xl border border-zinc-200 bg-zinc-50 p-10 text-center dark:border-zinc-800 dark:bg-zinc-900/50">
         <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-amber-100 dark:bg-amber-900/30">
@@ -31,16 +31,17 @@ export function EpisodeList({ recent }: { recent?: boolean }) {
             strokeLinecap="round"
             className="text-amber-500"
           >
-            <path d="M12 5v14" />
-            <path d="M5 12h14" />
+            <path d="M4 11a9 9 0 0 1 9 9" />
+            <path d="M4 4a16 16 0 0 1 16 16" />
+            <circle cx="5" cy="19" r="1" />
           </svg>
         </div>
-        <p className="text-sm font-medium text-zinc-700 dark:text-zinc-300">No episodes yet</p>
+        <p className="text-sm font-medium text-zinc-700 dark:text-zinc-300">No feeds yet</p>
         <Link
-          href="/upload"
+          href="/new-feed"
           className="mt-2 inline-block text-sm text-amber-600 hover:text-amber-500 dark:text-amber-400"
         >
-          Upload your first podcast
+          Add your first podcast feed
         </Link>
       </div>
     );
@@ -48,8 +49,8 @@ export function EpisodeList({ recent }: { recent?: boolean }) {
 
   return (
     <div className="space-y-2">
-      {episodes.map((ep) => (
-        <EpisodeCard key={ep._id} episode={ep} />
+      {feeds.map((feed) => (
+        <FeedCard key={feed._id} feed={feed} />
       ))}
     </div>
   );

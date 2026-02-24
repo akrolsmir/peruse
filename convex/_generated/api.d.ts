@@ -9,6 +9,7 @@
  */
 
 import type * as episodes from "../episodes.js";
+import type * as feeds from "../feeds.js";
 
 import type {
   ApiFromModules,
@@ -18,6 +19,7 @@ import type {
 
 declare const fullApi: ApiFromModules<{
   episodes: typeof episodes;
+  feeds: typeof feeds;
 }>;
 
 /**

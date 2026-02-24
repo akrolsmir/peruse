@@ -15,6 +15,20 @@ export const list = query({
   },
 });
 
+export const listRecent = query({
+  handler: async (ctx) => {
+    const episodes = await ctx.db.query("episodes").order("desc").take(5);
+    return episodes.map((ep) => ({
+      _id: ep._id,
+      title: ep.title,
+      slug: ep.slug,
+      status: ep.status,
+      hasRawTranscript: !!ep.rawTranscript,
+      createdAt: ep.createdAt,
+    }));
+  },
+});
+
 export const getById = query({
   args: { id: v.id("episodes") },
   handler: async (ctx, args) => {
@@ -44,6 +58,8 @@ export const create = mutation({
     url: v.optional(v.string()),
     slug: v.string(),
     storageId: v.optional(v.id("_storage")),
+    description: v.optional(v.string()),
+    feedId: v.optional(v.id("feeds")),
   },
   handler: async (ctx, args) => {
     let url = args.url ?? "";
@@ -63,6 +79,8 @@ export const create = mutation({
       status: "pending",
       createdAt: Date.now(),
       ...(audioUrl ? { audioUrl } : {}),
+      ...(args.description ? { description: args.description } : {}),
+      ...(args.feedId ? { feedId: args.feedId } : {}),
     });
     return { id, audioUrl };
   },
