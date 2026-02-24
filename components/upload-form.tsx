@@ -10,6 +10,11 @@ import type { Id } from "@/convex/_generated/dataModel";
 
 const models: { value: ASRModel; label: string; description: string }[] = [
   {
+    value: "whisperx",
+    label: "WhisperX Large v3",
+    description: "Word-level timestamps with speaker diarization",
+  },
+  {
     value: "whisper",
     label: "Whisper Large v3",
     description: "Fast, reliable, handles long files well",
@@ -18,11 +23,6 @@ const models: { value: ASRModel; label: string; description: string }[] = [
     value: "canary-qwen",
     label: "Canary-Qwen 2.5B",
     description: "Lower word error rate, may struggle with long files",
-  },
-  {
-    value: "whisperx",
-    label: "WhisperX Large v3",
-    description: "Word-level timestamps with speaker diarization",
   },
 ];
 
@@ -38,11 +38,11 @@ export function UploadForm() {
   const [file, setFile] = useState<File | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [title, setTitle] = useState(searchParams.get("title") || "");
-  const [model, setModel] = useState<ASRModel>("whisper");
+  const [model, setModel] = useState<ASRModel>("whisperx");
   const [minSpeakers, setMinSpeakers] = useState(2);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-  const feedDescription = searchParams.get("description") || undefined;
+  const [description, setDescription] = useState(searchParams.get("description") || "");
   const feedId = searchParams.get("feedId") as Id<"feeds"> | undefined;
 
   const canSubmit = !loading && (sourceMode === "url" ? url.trim() !== "" : file !== null);
@@ -64,7 +64,7 @@ export function UploadForm() {
           title: episodeTitle,
           url: url.trim(),
           slug,
-          description: feedDescription,
+          description: description || undefined,
           feedId: feedId || undefined,
         });
         const episodeId = (result as { id: string }).id;
@@ -101,7 +101,7 @@ export function UploadForm() {
           title: episodeTitle,
           slug,
           storageId,
-          description: feedDescription,
+          description: description || undefined,
           feedId: feedId || undefined,
         });
         const { id: episodeId, audioUrl } = result as { id: string; audioUrl: string };
@@ -141,6 +141,23 @@ export function UploadForm() {
           value={title}
           onChange={(e) => setTitle(e.target.value)}
           placeholder="Episode title"
+          className="w-full rounded-xl border border-zinc-200 bg-white px-4 py-3 text-sm text-zinc-900 placeholder:text-zinc-300 transition-colors focus:border-amber-500 focus:outline-none focus:ring-1 focus:ring-amber-500/20 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-100 dark:placeholder:text-zinc-600"
+        />
+      </div>
+
+      <div>
+        <label
+          htmlFor="description"
+          className="mb-2 block text-xs font-semibold uppercase tracking-widest text-zinc-400"
+        >
+          Description (optional)
+        </label>
+        <textarea
+          id="description"
+          value={description}
+          onChange={(e) => setDescription(e.target.value)}
+          placeholder="Episode description or show notes"
+          rows={3}
           className="w-full rounded-xl border border-zinc-200 bg-white px-4 py-3 text-sm text-zinc-900 placeholder:text-zinc-300 transition-colors focus:border-amber-500 focus:outline-none focus:ring-1 focus:ring-amber-500/20 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-100 dark:placeholder:text-zinc-600"
         />
       </div>

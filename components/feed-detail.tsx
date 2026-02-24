@@ -15,6 +15,26 @@ interface FeedEpisode {
   duration: string;
 }
 
+function formatDuration(raw: string): string {
+  if (!raw) return "";
+  // Already in h:mm:ss or mm:ss format
+  if (raw.includes(":")) {
+    const parts = raw.split(":").map(Number);
+    if (parts.length === 3) {
+      const [h, m] = parts;
+      return h > 0 ? `${h}h ${m}m` : `${m}m`;
+    }
+    const [m, s] = parts;
+    return m >= 60 ? `${Math.floor(m / 60)}h ${m % 60}m` : `${m}m`;
+  }
+  // Raw seconds
+  const totalSec = parseInt(raw, 10);
+  if (isNaN(totalSec)) return raw;
+  const h = Math.floor(totalSec / 3600);
+  const m = Math.floor((totalSec % 3600) / 60);
+  return h > 0 ? `${h}h ${m}m` : `${m}m`;
+}
+
 export function FeedDetail({ slug }: { slug: string }) {
   const feed = useQuery(api.feeds.getBySlug, { slug });
   const updateEpisodes = useMutation(api.feeds.updateEpisodes);
@@ -140,7 +160,7 @@ export function FeedDetail({ slug }: { slug: string }) {
                 <div className="mt-1 flex items-center gap-2 text-xs text-zinc-400">
                   {pubDate && <time>{pubDate}</time>}
                   {pubDate && ep.duration && <span>·</span>}
-                  {ep.duration && <span>{ep.duration}</span>}
+                  {ep.duration && <span>{formatDuration(ep.duration)}</span>}
                 </div>
               </div>
               {ep.audioUrl && (
