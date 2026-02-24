@@ -32,6 +32,23 @@ TODOs:
   - gate APIs behind login?
   - Track costs?
 
+
+## Inspirations
+- 80k podcast landing page
+- Hope in Source https://hopeinsource.com/
+- Dwarkesh transcripts
+
+## Names/domains?
+peruse.sh!
+
+considerations:
+script, talk, pod, article, articulate, spell
+log, transcript, read, readable, follow along
+word, episode, peruse
+
+domains: .sh, .dev, .ai, .com
+podsc.com, podscript.dev
+
 ## How it works
 
 When you submit a URL on `/upload`:
