@@ -131,14 +131,19 @@ function chunkSegments(segments: TranscriptSegment[]): TranscriptSegment[][] {
 export async function postProcess(
   segments: TranscriptSegment[],
   progress?: ProgressCallback,
-  options?: { speakerNames?: string[]; title?: string; description?: string },
+  options?: {
+    speakerNames?: string[];
+    title?: string;
+    description?: string;
+    feedDescription?: string;
+  },
 ): Promise<PostProcessedResult> {
   const client = new Anthropic();
   const hasSpeakers = segments.some((s) => s.speaker);
 
   const episodeContext =
-    options?.title || options?.description
-      ? `\nEpisode context:${options.title ? `\nTitle: ${options.title}` : ""}${options.description ? `\nDescription: ${options.description}` : ""}\n`
+    options?.title || options?.description || options?.feedDescription
+      ? `\nEpisode context:${options.title ? `\nTitle: ${options.title}` : ""}${options.description ? `\nDescription: ${options.description}` : ""}${options.feedDescription ? `\nShow description: ${options.feedDescription}` : ""}\n`
       : "";
 
   const chunks = chunkSegments(segments);

@@ -34,6 +34,12 @@ async function reprocessPipeline(id: Id<"episodes">) {
 
     const segments: TranscriptSegment[] = JSON.parse(episode.rawTranscript);
 
+    let feedDescription: string | undefined;
+    if (episode.feedId) {
+      const feed = await getConvex().query(api.feeds.getById, { id: episode.feedId });
+      feedDescription = feed?.description ?? undefined;
+    }
+
     await postProcess(
       segments,
       {
@@ -53,7 +59,7 @@ async function reprocessPipeline(id: Id<"episodes">) {
           });
         },
       },
-      { title: episode.title, description: episode.description },
+      { title: episode.title, description: episode.description, feedDescription },
     );
   } catch (err) {
     console.error("Reprocess failed:", err);

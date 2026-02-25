@@ -12,30 +12,25 @@ choosing an ASR model off of replicate:
 
 ## TODOs
 
-- for postprocessing, compare json structured output to previous (non-json) -- the timestamps seem off more often now.
-- maybe switch sonnet to medium effort for faster responses?
-
-- change postprocessing to create something more 80k-style. Dialog not timestamp-first; conversational but still easy to read.
-  - could add clarifications eg "SWE (Software Engineer)" in parenthesis, augment eg "Holden [Karnofsky]" in brackets.
-  - Could link to jargon
-
 - player improvements:
   - variable speed
   - styling (center)
 - episode page:
   - [x] show titles as headers
   - [x] shorter slugify (no cruft at end)
+  - pick a better sans-serif pairing
   - export entire thing to markdown
   - tap to change speaker description
     - (maybe more ways to edit things in general)
     - big brain: speak directly with ai to change things!!
   - backlink to the podcast
-  - fix: date should be from episode metadata
+  - fix: date should be from episode pub date, not our upload date
 - bugs
   - [x] pass episode description as a hint to parsing => not sure this is an improvement tho
   - dropped transcript before "passion capital wins" on /social-radars-with-tom-3-speakers-align-output-mlx23ryw
   - fix the timestamps so they're consistent (no jumping)
 - code smells:
+  - feeds should probably load 1mb of data; make a subtable instead?
   - consolidate prompts
   - consolidate formatTimestamps (?)
 - longterm:
@@ -43,6 +38,13 @@ choosing an ASR model off of replicate:
   - Suggest fixes (to implement via claude code?)
   - gate APIs behind login?
   - Track costs?
+
+- [x] for postprocessing, compare json structured output to previous (non-json) -- the timestamps seem off more often now.
+- maybe switch sonnet to medium effort for faster responses?
+
+- [x] change postprocessing to create something more 80k-style. Dialog not timestamp-first; conversational but still easy to read.
+  - could add clarifications eg "SWE (Software Engineer)" in parenthesis, augment eg "Holden [Karnofsky]" in brackets.
+  - Could link to jargon
 
 ## Inspirations
 

@@ -26,6 +26,7 @@ function formatTimestamp(seconds: number): string {
 
 export function EpisodeDetail({ slug }: { slug: string }) {
   const episode = useQuery(api.episodes.getBySlug, { slug });
+  const feed = useQuery(api.feeds.getById, episode?.feedId ? { id: episode.feedId } : "skip");
   const playerRef = useRef<AudioPlayerHandle>(null);
   const [currentTime, setCurrentTime] = useState(0);
   const [viewMode, setViewMode] = useState<"cleaned" | "both" | "raw" | "json">("cleaned");
@@ -80,7 +81,19 @@ export function EpisodeDetail({ slug }: { slug: string }) {
 
       {/* Header */}
       <header className="mb-10">
-        <StatusBadge status={episode.status} />
+        {feed ? (
+          <Link
+            href={`/feeds/${feed.slug}`}
+            className="mb-4 inline-flex items-center gap-2.5 text-sm text-zinc-400 transition-colors hover:text-zinc-700 dark:hover:text-zinc-200"
+          >
+            {feed.imageUrl && (
+              <img src={feed.imageUrl} alt="" className="h-6 w-6 rounded object-cover" />
+            )}
+            <span>{feed.title}</span>
+          </Link>
+        ) : (
+          <StatusBadge status={episode.status} />
+        )}
         <h1 className="mt-3 text-3xl font-bold tracking-tight text-zinc-900 dark:text-zinc-50">
           {episode.title}
         </h1>

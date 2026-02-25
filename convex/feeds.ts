@@ -8,6 +8,13 @@ export const list = query({
   },
 });
 
+export const getById = query({
+  args: { id: v.id("feeds") },
+  handler: async (ctx, args) => {
+    return await ctx.db.get(args.id);
+  },
+});
+
 export const listRecent = query({
   handler: async (ctx) => {
     return await ctx.db.query("feeds").order("desc").take(5);

@@ -73,6 +73,11 @@ async function processPipeline(
     });
 
     const episode = await getConvex().query(api.episodes.getById, { id });
+    let feedDescription: string | undefined;
+    if (episode?.feedId) {
+      const feed = await getConvex().query(api.feeds.getById, { id: episode.feedId });
+      feedDescription = feed?.description ?? undefined;
+    }
     await postProcess(
       segments,
       {
@@ -92,7 +97,7 @@ async function processPipeline(
           });
         },
       },
-      { title: episode?.title, description: episode?.description },
+      { title: episode?.title, description: episode?.description, feedDescription },
     );
   } catch (err) {
     console.error("Pipeline failed:", err);
