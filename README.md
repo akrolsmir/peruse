@@ -1,15 +1,3 @@
-## Notes
-
-Example URL: https://api.substack.com/feed/podcast/187852154/cecdbe38125e2786cbfebe31dd083d4f.mp3 (dwarkesh podcast w/ dario, 2h)
-Example URL: https://episodes.captivate.fm/episode/e45099d6-5d22-49e4-b8fd-def4040a4c04.mp3 (social radars w/ tom blomfield)
-(todo: load a short, med, long snippet into default example)
-
-choosing an ASR model off of replicate:
-
-1. vaibhavs10/incredibly-fast-whisper has a very fast cold start, but maybe slower RTF (real-time factor).
-2. nvidia/canary-qwen-2.5b on replicate has a limit of 120 minutes: https://github.com/zsxkib/cog-nvidia-canary-qwen-2.5b/blob/09ea034bdc4d930940b8d3ca0f4d499c181809af/predict.py#L86. also a very long replicate startup, like a minute or so
-3. victor-upmeet/whisperx for built in diarisation. approx 4-6min of speech/1cent, and 2-3min runtime for 70min transcript
-
 ## TODOs
 
 - player improvements:
@@ -19,11 +7,11 @@ choosing an ASR model off of replicate:
   - [x] show titles as headers
   - [x] shorter slugify (no cruft at end)
   - pick a better sans-serif pairing
-  - export entire thing to markdown
+  - export entire script to markdown
   - tap to change speaker description
     - (maybe more ways to edit things in general)
     - big brain: speak directly with ai to change things!!
-  - backlink to the podcast
+  - [x] backlink to the podcast
   - fix: date should be from episode pub date, not our upload date
 - bugs
   - [x] pass episode description as a hint to parsing => not sure this is an improvement tho
@@ -38,6 +26,7 @@ choosing an ASR model off of replicate:
   - Suggest fixes (to implement via claude code?)
   - gate APIs behind login?
   - Track costs?
+  - Add auth?
 
 - [x] for postprocessing, compare json structured output to previous (non-json) -- the timestamps seem off more often now.
 - maybe switch sonnet to medium effort for faster responses?
@@ -45,6 +34,18 @@ choosing an ASR model off of replicate:
 - [x] change postprocessing to create something more 80k-style. Dialog not timestamp-first; conversational but still easy to read.
   - could add clarifications eg "SWE (Software Engineer)" in parenthesis, augment eg "Holden [Karnofsky]" in brackets.
   - Could link to jargon
+
+## Notes
+
+Example URL: https://api.substack.com/feed/podcast/187852154/cecdbe38125e2786cbfebe31dd083d4f.mp3 (dwarkesh podcast w/ dario, 2h)
+Example URL: https://episodes.captivate.fm/episode/e45099d6-5d22-49e4-b8fd-def4040a4c04.mp3 (social radars w/ tom blomfield)
+(todo: load a short, med, long snippet into default example)
+
+choosing an ASR model off of replicate:
+
+1. vaibhavs10/incredibly-fast-whisper has a very fast cold start, but maybe slower RTF (real-time factor).
+2. nvidia/canary-qwen-2.5b on replicate has a limit of 120 minutes: https://github.com/zsxkib/cog-nvidia-canary-qwen-2.5b/blob/09ea034bdc4d930940b8d3ca0f4d499c181809af/predict.py#L86. also a very long replicate startup, like a minute or so
+3. victor-upmeet/whisperx for built in diarisation. approx 4-6min of speech/1cent, and 2-3min runtime for 70min transcript
 
 ## Inspirations
 
