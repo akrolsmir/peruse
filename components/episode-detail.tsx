@@ -81,19 +81,36 @@ export function EpisodeDetail({ slug }: { slug: string }) {
 
       {/* Header */}
       <header className="mb-10">
-        {feed ? (
+        <div className="mb-4 flex items-center gap-2 text-sm text-zinc-400">
           <Link
-            href={`/feeds/${feed.slug}`}
-            className="mb-4 inline-flex items-center gap-2.5 text-sm text-zinc-400 transition-colors hover:text-zinc-700 dark:hover:text-zinc-200"
+            href={feed ? `/feeds/${feed.slug}` : "/"}
+            className="inline-flex items-center gap-1.5 transition-colors hover:text-zinc-700 dark:hover:text-zinc-200"
           >
-            {feed.imageUrl && (
-              <img src={feed.imageUrl} alt="" className="h-6 w-6 rounded object-cover" />
+            <svg
+              width="14"
+              height="14"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <path d="M19 12H5" />
+              <path d="M12 19l-7-7 7-7" />
+            </svg>
+            {feed ? (
+              <span className="inline-flex items-center gap-2">
+                {feed.imageUrl && (
+                  <img src={feed.imageUrl} alt="" className="h-5 w-5 rounded object-cover" />
+                )}
+                {feed.title}
+              </span>
+            ) : (
+              "Back"
             )}
-            <span>{feed.title}</span>
           </Link>
-        ) : (
-          <StatusBadge status={episode.status} />
-        )}
+        </div>
         <h1 className="mt-3 text-3xl font-bold tracking-tight text-zinc-900 dark:text-zinc-50">
           {episode.title}
         </h1>
