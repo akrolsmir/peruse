@@ -230,15 +230,9 @@ ${chunkText}`,
   const fullText = allParagraphs
     .map((p) => {
       const prefix = p.speaker ? `[${p.speaker}] ` : "";
-      return `${prefix}${p.text}`;
+      return `${prefix}${formatTime(p.start)} - ${formatTime(p.end)}: ${p.text}`;
     })
     .join("\n\n");
-
-  const speakerNamesInstruction = hasSpeakers
-    ? `
-
-For speaker_names: The transcript has speaker labels like SPEAKER_00, SPEAKER_01, etc. Infer the real name of each speaker from context (introductions, references to each other). Return an array where index 0 is SPEAKER_00's name, index 1 is SPEAKER_01's name, etc. If you cannot determine a name, use the raw label (e.g. "SPEAKER_00").`
-    : "";
 
   console.log(
     `[postprocess] Generating summary and chapters (${allParagraphs.length} paragraphs, ${fullText.length} chars)`,
@@ -255,17 +249,30 @@ For speaker_names: The transcript has speaker labels like SPEAKER_00, SPEAKER_01
     messages: [
       {
         role: "user",
-        content: `Here is a cleaned podcast transcript. Generate a summary and chapter list.
+        content: `Here is a cleaned podcast transcript. Generate a summary, chapter titles, and speaker names.
 ${episodeContext}
 Transcript:
 ${fullText}
 
 For the summary: write 1-2 short, punchy paragraphs summarizing the podcast episode.
 
-For chapters:
-- Create 4-8 chapters based on topic shifts
-- Use descriptive titles
-- Timestamps should correspond to where that topic begins (in seconds)${speakerNamesInstruction}`,
+For chapter titles:
+- Create chapter titles wherever the topic shifts. Approximately once every 2-8 minutes, but longer is fine.
+- Titles should be catchy and descriptive.
+- Sentence fragments and questions are good. Avoid sounding like AI slop.
+- Use sentence case -- only capitalize the first letter, except for proper nouns.
+- Chapter timestamps should correspond to where that topic begins, in seconds.
+
+${
+  hasSpeakers
+    ? `
+
+For speaker_names: The transcript has speaker labels like SPEAKER_00, SPEAKER_01, etc. 
+Infer the real name of each speaker from context (introductions, references to each other). 
+Return an array where index 0 is SPEAKER_00's name, index 1 is SPEAKER_01's name, etc. 
+If you cannot determine a name, use the raw label (e.g. "SPEAKER_00").`
+    : ""
+}`,
       },
     ],
   });
