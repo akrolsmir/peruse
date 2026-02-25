@@ -7,6 +7,7 @@ import { AudioPlayer, type AudioPlayerHandle } from "@/components/audio-player";
 import { TranscriptView } from "@/components/transcript-view";
 import { RawTranscriptView } from "@/components/raw-transcript-view";
 import { SyncedTranscriptView } from "@/components/synced-transcript-view";
+import { ChapterNav } from "@/components/chapter-nav";
 import { StatusBadge } from "@/components/status-badge";
 import Link from "next/link";
 
@@ -66,8 +67,17 @@ export function EpisodeDetail({ slug }: { slug: string }) {
     playerRef.current?.seekTo(time);
   };
 
+  const showChapterNav = chapters.length > 0 && (hasContent || paragraphs.length > 0);
+
   return (
     <>
+      {/* Chapter sidebar — positioned relative to the page, not the transcript */}
+      {showChapterNav && (
+        <div className="hidden lg:block lg:fixed lg:right-[calc(50vw-32rem-8rem)] lg:top-0 lg:w-48 lg:pt-10 xl:right-[calc(50vw-32rem-10rem)] xl:w-52">
+          <ChapterNav chapters={chapters} onSeek={handleSeek} />
+        </div>
+      )}
+
       {/* Header */}
       <header className="mb-10">
         <StatusBadge status={episode.status} />
@@ -134,30 +144,7 @@ export function EpisodeDetail({ slug }: { slug: string }) {
             </section>
           )}
 
-          {/* Chapters */}
-          {chapters.length > 0 && (
-            <section>
-              <h2 className="mb-3 text-xs font-semibold uppercase tracking-widest text-zinc-400">
-                Chapters
-              </h2>
-              <div className="divide-y divide-zinc-100 rounded-xl border border-zinc-200 dark:divide-zinc-800 dark:border-zinc-800">
-                {chapters.map((ch, i) => (
-                  <button
-                    key={i}
-                    onClick={() => handleSeek(ch.timestamp)}
-                    className="flex w-full items-center gap-4 px-4 py-3 text-left transition-colors first:rounded-t-xl last:rounded-b-xl hover:bg-zinc-50 dark:hover:bg-zinc-900"
-                  >
-                    <span className="w-14 shrink-0 font-mono text-xs tabular-nums text-amber-600 dark:text-amber-400">
-                      {formatTimestamp(ch.timestamp)}
-                    </span>
-                    <span className="text-sm text-zinc-700 dark:text-zinc-300">{ch.title}</span>
-                  </button>
-                ))}
-              </div>
-            </section>
-          )}
-
-          {/* Transcript */}
+          {/* Transcript with chapter sidebar */}
           {(paragraphs.length > 0 || hasRaw) && (
             <section>
               <div className="mb-3 flex items-center justify-between">
@@ -187,50 +174,54 @@ export function EpisodeDetail({ slug }: { slug: string }) {
                   </div>
                 )}
               </div>
-              {viewMode === "json" && hasRaw ? (
-                <pre className="whitespace-pre-wrap break-words rounded-xl border border-zinc-200 bg-zinc-50 p-4 font-mono text-[12px] leading-relaxed text-zinc-600 dark:border-zinc-800 dark:bg-zinc-900/50 dark:text-zinc-400">
-                  {JSON.stringify(JSON.parse(episode.rawTranscript!), null, 2)}
-                </pre>
-              ) : viewMode === "both" && hasRaw && paragraphs.length > 0 ? (
-                <div className="ml-[calc(-50vw+50%)] w-screen">
-                  <div className="mx-auto max-w-5xl px-4">
-                    <div className="mb-2 grid grid-cols-2 gap-6">
-                      <div className="text-[10px] font-semibold uppercase tracking-widest text-zinc-300 dark:text-zinc-600">
-                        Cleaned
+
+              <div>
+                {viewMode === "json" && hasRaw ? (
+                  <pre className="whitespace-pre-wrap break-words rounded-xl border border-zinc-200 bg-zinc-50 p-4 font-mono text-[12px] leading-relaxed text-zinc-600 dark:border-zinc-800 dark:bg-zinc-900/50 dark:text-zinc-400">
+                    {JSON.stringify(JSON.parse(episode.rawTranscript!), null, 2)}
+                  </pre>
+                ) : viewMode === "both" && hasRaw && paragraphs.length > 0 ? (
+                  <div className="ml-[calc(-50vw+50%)] w-screen">
+                    <div className="mx-auto max-w-5xl px-4">
+                      <div className="mb-2 grid grid-cols-2 gap-6">
+                        <div className="text-[10px] font-semibold uppercase tracking-widest text-zinc-300 dark:text-zinc-600">
+                          Cleaned
+                        </div>
+                        <div className="text-[10px] font-semibold uppercase tracking-widest text-zinc-300 dark:text-zinc-600">
+                          Raw
+                        </div>
                       </div>
-                      <div className="text-[10px] font-semibold uppercase tracking-widest text-zinc-300 dark:text-zinc-600">
-                        Raw
-                      </div>
+                      <SyncedTranscriptView
+                        paragraphs={paragraphs}
+                        segments={rawSegments}
+                        speakerNames={speakerNames}
+                        currentTime={currentTime}
+                        onSeek={handleSeek}
+                      />
                     </div>
-                    <SyncedTranscriptView
-                      paragraphs={paragraphs}
-                      segments={rawSegments}
-                      speakerNames={speakerNames}
-                      currentTime={currentTime}
-                      onSeek={handleSeek}
-                    />
                   </div>
-                </div>
-              ) : viewMode === "raw" && hasRaw ? (
-                <RawTranscriptView
-                  segments={rawSegments}
-                  currentTime={currentTime}
-                  onSeek={handleSeek}
-                />
-              ) : paragraphs.length > 0 ? (
-                <TranscriptView
-                  paragraphs={paragraphs}
-                  speakerNames={speakerNames}
-                  currentTime={currentTime}
-                  onSeek={handleSeek}
-                />
-              ) : hasRaw ? (
-                <RawTranscriptView
-                  segments={rawSegments}
-                  currentTime={currentTime}
-                  onSeek={handleSeek}
-                />
-              ) : null}
+                ) : viewMode === "raw" && hasRaw ? (
+                  <RawTranscriptView
+                    segments={rawSegments}
+                    currentTime={currentTime}
+                    onSeek={handleSeek}
+                  />
+                ) : paragraphs.length > 0 ? (
+                  <TranscriptView
+                    paragraphs={paragraphs}
+                    chapters={chapters}
+                    speakerNames={speakerNames}
+                    currentTime={currentTime}
+                    onSeek={handleSeek}
+                  />
+                ) : hasRaw ? (
+                  <RawTranscriptView
+                    segments={rawSegments}
+                    currentTime={currentTime}
+                    onSeek={handleSeek}
+                  />
+                ) : null}
+              </div>
             </section>
           )}
         </div>
