@@ -4,7 +4,6 @@ import { useState, useRef } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useMutation } from "convex/react";
 import { api } from "@/convex/_generated/api";
-import { slugify } from "@/lib/slugify";
 import type { ASRModel } from "@/lib/transcribe";
 import type { Id } from "@/convex/_generated/dataModel";
 
@@ -60,16 +59,15 @@ export function UploadForm() {
       if (sourceMode === "url") {
         const episodeTitle =
           title.trim() || new URL(url).pathname.split("/").pop() || "Untitled Episode";
-        episodeSlug = slugify(episodeTitle) + "-" + Date.now().toString(36);
 
         const result = await createEpisode({
           title: episodeTitle,
           url: url.trim(),
-          slug: episodeSlug,
           description: description || undefined,
           feedId: feedId || undefined,
         });
-        const episodeId = (result as { id: string }).id;
+        const { id: episodeId, slug } = result as { id: string; slug: string };
+        episodeSlug = slug;
 
         await fetch("/api/process", {
           method: "POST",
@@ -86,7 +84,6 @@ export function UploadForm() {
 
         const episodeTitle =
           title.trim() || file.name.replace(/\.[^.]+$/, "") || "Untitled Episode";
-        episodeSlug = slugify(episodeTitle) + "-" + Date.now().toString(36);
 
         // Upload file to Convex storage
         const uploadUrl = await generateUploadUrl();
@@ -101,12 +98,20 @@ export function UploadForm() {
         // Create episode with storageId
         const result = await createEpisode({
           title: episodeTitle,
-          slug: episodeSlug,
           storageId,
           description: description || undefined,
           feedId: feedId || undefined,
         });
-        const { id: episodeId, audioUrl } = result as { id: string; audioUrl: string };
+        const {
+          id: episodeId,
+          slug,
+          audioUrl,
+        } = result as {
+          id: string;
+          slug: string;
+          audioUrl: string;
+        };
+        episodeSlug = slug;
 
         await fetch("/api/process", {
           method: "POST",

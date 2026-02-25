@@ -4,7 +4,6 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useMutation, useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
-import { slugify } from "@/lib/slugify";
 
 export function AddFeedForm() {
   const router = useRouter();
@@ -42,16 +41,15 @@ export function AddFeedForm() {
       }
 
       const feed = await res.json();
-      const slug = slugify(feed.title) + "-" + Date.now().toString(36);
 
-      await createFeed({
+      const result = await createFeed({
         feedUrl: normalizedUrl,
         title: feed.title,
         description: feed.description || undefined,
         imageUrl: feed.imageUrl || undefined,
-        slug,
         episodes: JSON.stringify(feed.episodes),
       });
+      const { slug } = result as { slug: string };
 
       router.push(`/feeds/${slug}`);
     } catch (err) {

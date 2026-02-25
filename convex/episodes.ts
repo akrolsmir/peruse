@@ -1,5 +1,6 @@
 import { query, mutation } from "./_generated/server";
 import { v } from "convex/values";
+import { uniqueSlug } from "./slugs";
 
 export const list = query({
   handler: async (ctx) => {
@@ -56,7 +57,6 @@ export const create = mutation({
   args: {
     title: v.string(),
     url: v.optional(v.string()),
-    slug: v.string(),
     storageId: v.optional(v.id("_storage")),
     description: v.optional(v.string()),
     feedId: v.optional(v.id("feeds")),
@@ -72,17 +72,19 @@ export const create = mutation({
       audioUrl = servingUrl;
     }
 
+    const slug = await uniqueSlug(ctx.db, "episodes", args.title);
+
     const id = await ctx.db.insert("episodes", {
       title: args.title,
       url,
-      slug: args.slug,
+      slug,
       status: "pending",
       createdAt: Date.now(),
       ...(audioUrl ? { audioUrl } : {}),
       ...(args.description ? { description: args.description } : {}),
       ...(args.feedId ? { feedId: args.feedId } : {}),
     });
-    return { id, audioUrl };
+    return { id, slug, audioUrl };
   },
 });
 
@@ -115,7 +117,7 @@ export const clone = mutation({
   handler: async (ctx, args) => {
     const episode = await ctx.db.get(args.id);
     if (!episode) throw new Error("Episode not found");
-    const slug = episode.slug + "-re-" + Date.now().toString(36);
+    const slug = await uniqueSlug(ctx.db, "episodes", episode.title + " re");
     const newId = await ctx.db.insert("episodes", {
       title: episode.title,
       url: episode.url,

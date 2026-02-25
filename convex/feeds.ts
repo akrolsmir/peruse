@@ -1,5 +1,6 @@
 import { query, mutation } from "./_generated/server";
 import { v } from "convex/values";
+import { uniqueSlug } from "./slugs";
 
 export const list = query({
   handler: async (ctx) => {
@@ -39,16 +40,18 @@ export const create = mutation({
     title: v.string(),
     description: v.optional(v.string()),
     imageUrl: v.optional(v.string()),
-    slug: v.string(),
     episodes: v.string(),
   },
   handler: async (ctx, args) => {
+    const slug = await uniqueSlug(ctx.db, "feeds", args.title);
     const now = Date.now();
-    return await ctx.db.insert("feeds", {
+    const id = await ctx.db.insert("feeds", {
       ...args,
+      slug,
       lastFetchedAt: now,
       createdAt: now,
     });
+    return { id, slug };
   },
 });
 
