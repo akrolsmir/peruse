@@ -99,6 +99,35 @@ function chunkSegments(segments: TranscriptSegment[]): TranscriptSegment[][] {
   return chunks;
 }
 
+// Post-processes raw ASR transcript segments into a polished, readable transcript.
+//
+//   Raw ASR segments (word-level, noisy)
+//     │
+//     ▼
+//   ┌─────────────────────────────────┐
+//   │  Split into ~60s chunks         │
+//   └──────────────┬──────────────────┘
+//                  │
+//                  │
+//                  ▼  (sequential, one chunk at a time)
+//   ┌─────────────────────────────────┐
+//   │  Claude: clean chunk            │    Remove filler words, fix ASR
+//   │  (repeat for each chunk)        │    errors, group into paragraphs
+//   └──────────────┬──────────────────┘    w/ timestamps & speakers
+//                ▼
+//   ┌─────────────────────────────────┐
+//   │  Merge all cleaned paragraphs   │
+//   └──────────────┬──────────────────┘
+//                  ▼
+//   ┌─────────────────────────────────┐
+//   │  Claude: generate summary,      │
+//   │  chapters, and speaker names    │
+//   └──────────────┬──────────────────┘
+//                  ▼
+//   PostProcessedResult { paragraphs, summary, chapters, speakerNames }
+//
+// Episode title/description are included as context in prompts when available.
+// Progress callbacks fire after each chunk and after the summary step.
 export async function postProcess(
   segments: TranscriptSegment[],
   progress?: ProgressCallback,
