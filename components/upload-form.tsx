@@ -55,15 +55,17 @@ export function UploadForm() {
     setError("");
 
     try {
+      let episodeSlug: string;
+
       if (sourceMode === "url") {
         const episodeTitle =
           title.trim() || new URL(url).pathname.split("/").pop() || "Untitled Episode";
-        const slug = slugify(episodeTitle) + "-" + Date.now().toString(36);
+        episodeSlug = slugify(episodeTitle) + "-" + Date.now().toString(36);
 
         const result = await createEpisode({
           title: episodeTitle,
           url: url.trim(),
-          slug,
+          slug: episodeSlug,
           description: description || undefined,
           feedId: feedId || undefined,
         });
@@ -84,7 +86,7 @@ export function UploadForm() {
 
         const episodeTitle =
           title.trim() || file.name.replace(/\.[^.]+$/, "") || "Untitled Episode";
-        const slug = slugify(episodeTitle) + "-" + Date.now().toString(36);
+        episodeSlug = slugify(episodeTitle) + "-" + Date.now().toString(36);
 
         // Upload file to Convex storage
         const uploadUrl = await generateUploadUrl();
@@ -99,7 +101,7 @@ export function UploadForm() {
         // Create episode with storageId
         const result = await createEpisode({
           title: episodeTitle,
-          slug,
+          slug: episodeSlug,
           storageId,
           description: description || undefined,
           feedId: feedId || undefined,
@@ -118,7 +120,7 @@ export function UploadForm() {
         });
       }
 
-      router.push("/");
+      router.push(`/ep/${episodeSlug}`);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Something went wrong");
     } finally {
