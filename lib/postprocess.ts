@@ -260,7 +260,7 @@ ${episodeContext}
 Transcript:
 ${fullText}
 
-For the summary: write 2-3 paragraphs summarizing the podcast episode.
+For the summary: write 1-2 short, punchy paragraphs summarizing the podcast episode.
 
 For chapters:
 - Create 4-8 chapters based on topic shifts
