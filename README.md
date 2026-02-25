@@ -1,3 +1,54 @@
+peruse helps podcasters and listeners get excellent transcripts
+
+## Why make peruse?
+
+- Reading is great, I love reading.
+  - Reading can be much faster. Typically people speak at 130wpm but read at twice that, 250wpm. Yeah, you can listen on 2x, but:
+  - Reading lets you skip around, search, excerpt quotes. You're (more) in control of your attention!
+- But a bunch of great content is locked behind podcasts.
+  - CEOs (mostly) don't have time to write big public essays. But they're happy to sit down for two hours to talk through their views.
+- Compared to essays or talks, podcasts are special for their interviewer/interviewee dynamic: allowing back and forth, debate, follow ups. A good host acts as the listener's proxy.
+- I like playing with cool UXs.
+  - For podcast transcripts specifically, I'm very inspired by the experience that 80K, Dwarkesh, and Hope in Source offer.
+  - More broadly, I love the reading experiences of gwern, LessWrong, and Practical Typography
+  - As well as a lot of blogs from technical folks ([jefftk.com], [kipp.ly], [venki.dev], [benkuhn.net], [ekzhang.com])
+- Also: the tech is here! Transcription has fallen drastically in costs, and LLM script editing has gotten much better
+- Making podcasts legible to other apps, and future LLMs! See [writing for the AIs](https://www.astralcodexten.com/p/writing-for-the-ais)
+- I've also hosted/spoke on a couple podcasts, and getting good transcripts was surprisingly painful.
+  - Descript is pretty good (and, also an inspiration), but it feels like Canva or Photoshop; I want Midjourney.
+
+## What peruse offers
+
+Now
+
+- Upload an episode and get a good transcript
+- Read it and listen to it, right here
+- Upload an RSS feed to get quick access to its episodes
+
+Soon
+
+- Cheaper, faster, better (quality) transcripts
+- Export, share?
+- API access; LLM access?
+
+## Musings
+
+- LLMs enable all kinds of translation between content
+  - Humans vary wildly in their preference and fluency across mediums (eg text vs video vs audio; shortform vs longform)
+  - https://www.lesswrong.com/posts/Pa5NqtxHBkGuCh98G/great-minds-might-not-think-alike
+  - Q: will future LLMs also vary a lot?
+- How to incorporate fixes and edits?
+  - How much to orient to WYSIWYG, wiki-like editing? vs prompting for changes?
+  - Haven't seen great designs for this, unlike eg wikipedia or grokipedia or TVTropes
+- Idea to explore: same content, different "lens". Transcript vs essay vs summary vs ...
+  - Possible solution to differences in taste
+  - See also: https://www.longtermwiki.com/
+- How to avoid slop?
+  - Transcripts themselves are great, since they're human generated
+  - Editing pass does make a few changes I stylistically disapprove of, but basically fine for now
+  - Summaries and titles are currently AI-generated, but can be sloppy.
+- Principle: spend more compute (and dev time) on things that will be consumed more broadly. Eg titles, intros, summaries/descriptions. Backfill with AI for the rest.
+
 ## TODOs
 
 - player improvements:
@@ -6,7 +57,6 @@
 - episode page:
   - [x] show titles as headers
   - [x] shorter slugify (no cruft at end)
-  - pick a better sans-serif pairing
   - export entire script to markdown
   - tap to change speaker description
     - (maybe more ways to edit things in general)
@@ -21,6 +71,11 @@
   - feeds should probably load 1mb of data; make a subtable instead?
   - consolidate prompts
   - consolidate formatTimestamps (?)
+- style things
+  - pick a better sans-serif pairing
+  - og image, use feed images?
+  - colors for speakers
+  - dark mode? next level: custom theming based on image/banner?
 - longterm:
   - Search interface over popular podcasts (eg via listennotes api? or start with a few RSS feeds?)
   - Suggest fixes (to implement via claude code?)
