@@ -34,23 +34,27 @@ async function reprocessPipeline(id: Id<"episodes">) {
 
     const segments: TranscriptSegment[] = JSON.parse(episode.rawTranscript);
 
-    await postProcess(segments, {
-      async onChunkDone(paragraphs) {
-        await getConvex().mutation(api.episodes.update, {
-          id,
-          transcript: JSON.stringify(paragraphs),
-        });
+    await postProcess(
+      segments,
+      {
+        async onChunkDone(paragraphs) {
+          await getConvex().mutation(api.episodes.update, {
+            id,
+            transcript: JSON.stringify(paragraphs),
+          });
+        },
+        async onSummaryDone(summary, chapters, speakerNames) {
+          await getConvex().mutation(api.episodes.update, {
+            id,
+            summary,
+            chapters: JSON.stringify(chapters),
+            status: "done",
+            ...(speakerNames.length > 0 ? { speakerNames } : {}),
+          });
+        },
       },
-      async onSummaryDone(summary, chapters, speakerNames) {
-        await getConvex().mutation(api.episodes.update, {
-          id,
-          summary,
-          chapters: JSON.stringify(chapters),
-          status: "done",
-          ...(speakerNames.length > 0 ? { speakerNames } : {}),
-        });
-      },
-    });
+      { title: episode.title, description: episode.description },
+    );
   } catch (err) {
     console.error("Reprocess failed:", err);
     await getConvex().mutation(api.episodes.updateStatus, {

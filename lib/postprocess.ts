@@ -102,10 +102,15 @@ function chunkSegments(segments: TranscriptSegment[]): TranscriptSegment[][] {
 export async function postProcess(
   segments: TranscriptSegment[],
   progress?: ProgressCallback,
-  options?: { speakerNames?: string[] },
+  options?: { speakerNames?: string[]; title?: string; description?: string },
 ): Promise<PostProcessedResult> {
   const client = new Anthropic();
   const hasSpeakers = segments.some((s) => s.speaker);
+
+  const episodeContext =
+    options?.title || options?.description
+      ? `\nEpisode context:${options.title ? `\nTitle: ${options.title}` : ""}${options.description ? `\nDescription: ${options.description}` : ""}\n`
+      : "";
 
   const chunks = chunkSegments(segments);
   const allParagraphs: ProcessedParagraph[] = [];
@@ -142,7 +147,7 @@ export async function postProcess(
         {
           role: "user",
           content: `You are processing a podcast transcript. Clean up this transcript chunk and group it into natural paragraphs.
-
+${episodeContext}
 For each paragraph, provide the start and end timestamps (in seconds) and the cleaned text.
 
 Rules:
@@ -222,7 +227,7 @@ For speaker_names: The transcript has speaker labels like SPEAKER_00, SPEAKER_01
       {
         role: "user",
         content: `Here is a cleaned podcast transcript. Generate a summary and chapter list.
-
+${episodeContext}
 Transcript:
 ${fullText}
 
