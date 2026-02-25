@@ -19,18 +19,25 @@ choosing an ASR model off of replicate:
   - could add clarifications eg "SWE (Software Engineer)" in parenthesis, augment eg "Holden [Karnofsky]" in brackets.
   - Could link to jargon
 
-- player improvements: variable speed,
-- minor fixes:
-  - show titles as headers
-  - shorter slugify (no cruft at end)
+- player improvements:
+  - variable speed
+  - styling (center)
+- episode page:
+  - [x] show titles as headers
+  - [x] shorter slugify (no cruft at end)
   - export entire thing to markdown
   - tap to change speaker description
     - (maybe more ways to edit things in general)
     - big brain: speak directly with ai to change things!!
+  - backlink to the podcast
+  - fix: date should be from episode metadata
 - bugs
-  - pass episode description as a hint to parsing
+  - [x] pass episode description as a hint to parsing => not sure this is an improvement tho
   - dropped transcript before "passion capital wins" on /social-radars-with-tom-3-speakers-align-output-mlx23ryw
   - fix the timestamps so they're consistent (no jumping)
+- code smells:
+  - consolidate prompts
+  - consolidate formatTimestamps (?)
 - longterm:
   - Search interface over popular podcasts (eg via listennotes api? or start with a few RSS feeds?)
   - Suggest fixes (to implement via claude code?)
