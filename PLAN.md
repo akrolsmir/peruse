@@ -45,6 +45,14 @@ New feature: RSS feeds.\
   \  
   ask me any questions you need to cleanly structure this from a codebase and data perspective
 
+## v0 launch prio
+
+Look over the codebase and suggest a list of priorities for issues to tackle and features to add, before we make an initial announcement and v0 release. Categorize as p0/p1/p2, and also sm/md/lg in terms of difficulty. Go broad rather than deep with the plan, don't worry about planning implementations step by step. Approach this both as a PM and as a SWE would. Aim for 10-20 suggestions.
+
+Goals for v0 are to have something that's loved by at least some people (classic YC); might have some inherent virality and excitement; doesn't cost a bunch if eg hugged by reddit.
+
+Consider my notes in README.md, but also come up with your own ideas. Thanks!
+
 # Peruse - Original Implementation Plan
 
 ## Context
@@ -237,3 +245,145 @@ ANTHROPIC_API_KEY=...
   - Chapters are clickable and seek the player
   - Transcript shows with paragraph timestamps
   - Clicking timestamps seeks the player
+
+---
+
+# Peruse v0 Launch Priorities
+
+## Context
+
+Peruse is a podcast-to-transcript app with a solid MVP: real-time processing pipeline, clean reading experience, chapter nav, audio player with synced highlighting. The core product loop works. What's missing are the things that make it **safe to launch publicly**, **shareable/viral**, and **delightful enough that people come back**.
+
+Goals: loved by some people, inherent virality, doesn't bankrupt you if it hits the front page.
+
+---
+
+## P0 — Must ship before announcing
+
+### 1. Rate limiting & cost protection — `md`
+
+**Why:** A single curl loop could run up thousands in Replicate/Claude bills. This is the #1 financial risk.
+
+- IP-based rate limit on `/api/process` (e.g. 3 episodes/hour per IP)
+- Global concurrency cap (e.g. max 10 simultaneous transcriptions)
+- Consider a simple queue with Convex instead of fire-and-forget
+- Log cost per episode (token counts already tracked, just store them)
+
+### 2. OG metadata for episode pages — `sm`
+
+**Why:** When someone shares a Peruse transcript link on Twitter/Discord/Slack, it currently shows nothing. This is the #1 virality blocker. A beautiful preview card turns every share into an ad.
+
+- `generateMetadata()` on `/ep/[slug]` with title, summary, OG image
+- Consider auto-generating an OG image (episode title + podcast name on a branded card)
+- Same for `/feeds/[slug]`
+
+### 3. Fix the episode date (use pub date, not upload date) — `sm`
+
+**Why:** Already in your TODOs. Wrong dates look broken/untrustworthy. Quick win.
+
+### 4. Variable playback speed — `sm`
+
+**Why:** Podcast listeners expect this. Missing it feels immediately wrong. Just a `playbackRate` control (1x, 1.25x, 1.5x, 2x).
+
+### 5. Landing page / hero — `md`
+
+**Why:** Right now `/` is a list of episodes. New visitors need to understand what Peruse is in 3 seconds and see an example of a beautiful transcript. Show, don't tell.
+
+- Hero section: tagline + "Paste a podcast URL" input right on the homepage
+- Featured example transcript (pre-process a great episode from a popular podcast)
+- Move the episode/feed lists below the fold or to separate pages
+
+---
+
+## P1 — Ship soon after launch, or before if time allows
+
+### 6. Parallel chunk processing — `md`
+
+**Why:** A 2-hour episode currently makes ~120 sequential Claude calls taking 30-40 min. Parallelize chunks (batches of 10-20) to cut this to 3-5 min. Directly improves the "wow" moment.
+
+### 7. Export to Markdown / copy transcript — `sm`
+
+**Why:** Already in TODOs. High-value, low-effort. People will want to paste transcripts into notes, blogs, newsletters. A "Copy" or "Download .md" button makes the output immediately useful and shareable.
+
+### 8. Share link with timestamp — `sm`
+
+**Why:** `/ep/slug?t=1234` that auto-scrolls to that paragraph and starts playback. Enables sharing specific moments — the viral unit for podcasts. Like YouTube timestamps but for text.
+
+### 9. Search within transcript — `sm`
+
+**Why:** Ctrl+F works but a proper in-page search with highlighting and jump-to-match is much better UX, especially on mobile. Makes the transcript genuinely useful as a reference.
+
+### 10. Sticky audio player — `sm`
+
+**Why:** Currently the player is at the top. When reading a long transcript, you lose access to play/pause. Make it sticky at the bottom (like Spotify/Overcast). Already noted in your TODOs as a styling issue.
+
+### 11. Mobile polish — `md`
+
+**Why:** Shared links will be opened on phones. The transcript reading experience needs to work well on mobile: sticky player at bottom, chapter nav as a dropdown/drawer instead of sidebar, proper touch targets. Current layout is desktop-first.
+
+### 12. Error recovery & retry — `sm`
+
+**Why:** Replicate cold starts and transient failures will happen. A simple retry (1-2 attempts with backoff) on ASR + Claude calls prevents episodes from getting stuck in "error" or "transcribing" forever. Also add a "Retry" button on errored episodes.
+
+---
+
+## P2 — Nice to have, do when it feels right
+
+### 13. "Transcribe this podcast" browser extension or bookmarklet — `md`
+
+**Why:** Virality mechanic. One-click from any podcast page to Peruse. Much lower friction than copy-pasting URLs.
+
+### 14. Pre-populated popular podcasts — `lg`
+
+**Why:** New users can browse great transcripts immediately without having to submit their own. Stock the library with 10-20 episodes from popular shows (Lex Fridman, Dwarkesh, etc.). Makes the app feel alive and demonstrates quality. Could seed with RSS feeds.
+
+### 15. Full-text search across all episodes — `md`
+
+**Why:** "Search every podcast transcript" is a compelling pitch. Even a basic Convex text search over transcripts would be differentiated. This is the long-term moat feature.
+
+### 16. Inline speaker name editing — `sm`
+
+**Why:** ASR often gets speaker names wrong. Let users tap a speaker label to fix it. Small thing that dramatically improves output quality. Already in your TODOs.
+
+### 17. Keyboard shortcuts — `sm`
+
+**Why:** Power users will want: space to play/pause, left/right to skip, j/k to jump between paragraphs. Quick to add, makes the reading+listening experience feel premium.
+
+### 18. Basic analytics/monitoring — `sm`
+
+**Why:** You need to know what's happening post-launch. Minimal: track episodes processed, error rate, cost per episode. Could be as simple as a Convex query that aggregates episode stats. Not user-facing.
+
+### 19. RSS feed output — `md`
+
+**Why:** Generate an RSS feed of transcribed episodes so people can subscribe in their feed reader. "Subscribe to readable versions of this podcast." Interesting viral loop.
+
+### 20. Auth & per-user history — `lg`
+
+**Why:** Not needed for v0 if rate limiting is in place, but eventually people will want to see their transcription history. Convex auth is straightforward. Deprioritized because it adds friction to the first-use experience and rate limiting covers the abuse case.
+
+---
+
+## Summary matrix
+
+| #   | Feature                          | Priority | Size | Category    |
+| --- | -------------------------------- | -------- | ---- | ----------- |
+| 1   | Rate limiting & cost protection  | P0       | md   | Infra       |
+| 2   | OG metadata for shared links     | P0       | sm   | Virality    |
+| 3   | Fix episode date (use pub date)  | P0       | sm   | Bug         |
+| 4   | Variable playback speed          | P0       | sm   | UX          |
+| 5   | Landing page / hero              | P0       | md   | Growth      |
+| 6   | Parallel chunk processing        | P1       | md   | Perf        |
+| 7   | Export to Markdown / copy        | P1       | sm   | Feature     |
+| 8   | Share link with timestamp        | P1       | sm   | Virality    |
+| 9   | Search within transcript         | P1       | sm   | UX          |
+| 10  | Sticky audio player              | P1       | sm   | UX          |
+| 11  | Mobile polish                    | P1       | md   | UX          |
+| 12  | Error recovery & retry           | P1       | sm   | Reliability |
+| 13  | Browser extension / bookmarklet  | P2       | md   | Growth      |
+| 14  | Pre-populated popular podcasts   | P2       | lg   | Content     |
+| 15  | Full-text search across episodes | P2       | md   | Feature     |
+| 16  | Inline speaker name editing      | P2       | sm   | UX          |
+| 17  | Keyboard shortcuts               | P2       | sm   | UX          |
+| 18  | Basic analytics/monitoring       | P2       | sm   | Infra       |
+| 19  | RSS feed output                  | P2       | md   | Feature     |
+| 20  | Auth & per-user history          | P2       | lg   | Infra       |
