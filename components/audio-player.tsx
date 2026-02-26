@@ -12,14 +12,19 @@ interface AudioPlayerProps {
   onTimeUpdate?: (time: number) => void;
 }
 
+const SPEED_OPTIONS = [0.5, 0.7, 1.0, 1.2, 1.5, 1.7, 2.0, 2.5, 3.0, 4.0];
+
 export const AudioPlayer = forwardRef<AudioPlayerHandle, AudioPlayerProps>(function AudioPlayer(
   { src, onTimeUpdate },
   ref,
 ) {
   const audioRef = useRef<HTMLAudioElement>(null);
+  const speedMenuRef = useRef<HTMLDivElement>(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
+  const [playbackRate, setPlaybackRate] = useState(1.0);
+  const [showSpeedMenu, setShowSpeedMenu] = useState(false);
 
   useImperativeHandle(ref, () => ({
     seekTo(time: number) {
@@ -55,6 +60,18 @@ export const AudioPlayer = forwardRef<AudioPlayerHandle, AudioPlayerProps>(funct
     };
   }, []);
 
+  // Close speed menu on outside click
+  useEffect(() => {
+    if (!showSpeedMenu) return;
+    const handleClick = (e: MouseEvent) => {
+      if (speedMenuRef.current && !speedMenuRef.current.contains(e.target as Node)) {
+        setShowSpeedMenu(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClick);
+    return () => document.removeEventListener("mousedown", handleClick);
+  }, [showSpeedMenu]);
+
   const togglePlay = () => {
     if (!audioRef.current) return;
     if (isPlaying) {
@@ -72,13 +89,20 @@ export const AudioPlayer = forwardRef<AudioPlayerHandle, AudioPlayerProps>(funct
     audioRef.current.currentTime = pct * duration;
   };
 
-  const skip = (seconds: number) => {
-    if (audioRef.current) {
-      audioRef.current.currentTime = Math.max(
-        0,
-        Math.min(audioRef.current.currentTime + seconds, duration),
-      );
+  const stepSpeed = (direction: number) => {
+    const idx = SPEED_OPTIONS.indexOf(playbackRate);
+    const next = idx + direction;
+    if (next >= 0 && next < SPEED_OPTIONS.length) {
+      changeSpeed(SPEED_OPTIONS[next]);
     }
+  };
+
+  const changeSpeed = (rate: number) => {
+    setPlaybackRate(rate);
+    if (audioRef.current) {
+      audioRef.current.playbackRate = rate;
+    }
+    setShowSpeedMenu(false);
   };
 
   const formatTime = (s: number) => {
@@ -90,13 +114,17 @@ export const AudioPlayer = forwardRef<AudioPlayerHandle, AudioPlayerProps>(funct
     return `${m}:${sec.toString().padStart(2, "0")}`;
   };
 
+  const formatRate = (rate: number) => {
+    return rate % 1 === 0 ? `${rate}.0x` : `${rate}x`;
+  };
+
   const progress = duration > 0 ? (currentTime / duration) * 100 : 0;
 
   return (
     <div>
       <audio ref={audioRef} src={src} preload="metadata" onTimeUpdate={handleTimeUpdate} />
 
-      {/* Seek bar — full width at top edge of player bar */}
+      {/* Seek bar */}
       <div
         className="group relative h-1 w-full cursor-pointer bg-zinc-200 transition-all hover:h-1.5 dark:bg-zinc-800"
         onClick={handleSeek}
@@ -111,39 +139,74 @@ export const AudioPlayer = forwardRef<AudioPlayerHandle, AudioPlayerProps>(funct
         />
       </div>
 
-      {/* Controls */}
-      <div className="flex items-center gap-4 px-4 py-3">
-        <div className="flex items-center gap-1">
+      {/* Controls — centered */}
+      <div className="flex items-center justify-center gap-3 px-4 py-3 md:gap-4">
+        {/* Speed control */}
+        <div className="flex h-8 items-center md:h-9">
           <button
-            onClick={() => skip(-15)}
-            className="rounded-md px-2 py-1 font-mono text-xs tabular-nums text-zinc-400 transition-colors hover:text-zinc-700 dark:hover:text-zinc-200"
+            onClick={() => stepSpeed(-1)}
+            disabled={SPEED_OPTIONS.indexOf(playbackRate) <= 0}
+            className="flex h-8 w-5 items-center justify-center text-xs text-zinc-300 transition-colors hover:text-zinc-600 disabled:opacity-0 md:h-9 md:w-6 md:text-sm dark:text-zinc-600 dark:hover:text-zinc-300"
           >
-            −15
+            &lt;
           </button>
-          <button
-            onClick={togglePlay}
-            className="flex h-8 w-8 items-center justify-center rounded-full bg-amber-500 text-white transition-all hover:bg-amber-400 active:scale-95"
-          >
-            {isPlaying ? (
-              <svg width="12" height="12" viewBox="0 0 14 14" fill="currentColor">
-                <rect x="2" y="1" width="4" height="12" rx="1" />
-                <rect x="8" y="1" width="4" height="12" rx="1" />
-              </svg>
-            ) : (
-              <svg width="12" height="12" viewBox="0 0 14 14" fill="currentColor">
-                <path d="M4 1.5v11l8-5.5z" />
-              </svg>
+          <div ref={speedMenuRef} className="relative">
+            <button
+              onClick={() => setShowSpeedMenu(!showSpeedMenu)}
+              className={`flex h-8 items-center rounded-md px-1 font-mono text-xs tabular-nums transition-colors md:h-9 md:text-sm ${
+                playbackRate !== 1.0
+                  ? "text-amber-600 dark:text-amber-400"
+                  : "text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200"
+              }`}
+            >
+              {formatRate(playbackRate)}
+            </button>
+
+            {showSpeedMenu && (
+              <div className="absolute bottom-full left-1/2 mb-2 -translate-x-1/2 rounded-lg border border-zinc-200 bg-white py-1 shadow-lg dark:border-zinc-700 dark:bg-zinc-900">
+                {SPEED_OPTIONS.map((rate) => (
+                  <button
+                    key={rate}
+                    onClick={() => changeSpeed(rate)}
+                    className={`block w-full whitespace-nowrap px-4 py-1 text-left font-mono text-xs tabular-nums transition-colors md:text-sm ${
+                      rate === playbackRate
+                        ? "bg-amber-50 text-amber-600 dark:bg-amber-950 dark:text-amber-400"
+                        : "text-zinc-500 hover:bg-zinc-50 hover:text-zinc-800 dark:text-zinc-400 dark:hover:bg-zinc-800 dark:hover:text-zinc-200"
+                    }`}
+                  >
+                    {formatRate(rate)}
+                  </button>
+                ))}
+              </div>
             )}
-          </button>
+          </div>
           <button
-            onClick={() => skip(15)}
-            className="rounded-md px-2 py-1 font-mono text-xs tabular-nums text-zinc-400 transition-colors hover:text-zinc-700 dark:hover:text-zinc-200"
+            onClick={() => stepSpeed(1)}
+            disabled={SPEED_OPTIONS.indexOf(playbackRate) >= SPEED_OPTIONS.length - 1}
+            className="flex h-8 w-5 items-center justify-center text-xs text-zinc-300 transition-colors hover:text-zinc-600 disabled:opacity-0 md:h-9 md:w-6 md:text-sm dark:text-zinc-600 dark:hover:text-zinc-300"
           >
-            +15
+            &gt;
           </button>
         </div>
 
-        <span className="font-mono text-xs tabular-nums text-zinc-400">
+        {/* Play/pause */}
+        <button
+          onClick={togglePlay}
+          className="flex h-8 w-8 items-center justify-center rounded-full bg-amber-500 text-white transition-all hover:bg-amber-400 active:scale-95 md:h-9 md:w-9"
+        >
+          {isPlaying ? (
+            <svg className="h-3 w-3 md:h-3.5 md:w-3.5" viewBox="0 0 14 14" fill="currentColor">
+              <rect x="2" y="1" width="4" height="12" rx="1" />
+              <rect x="8" y="1" width="4" height="12" rx="1" />
+            </svg>
+          ) : (
+            <svg className="h-3 w-3 md:h-3.5 md:w-3.5" viewBox="0 0 14 14" fill="currentColor">
+              <path d="M4 1.5v11l8-5.5z" />
+            </svg>
+          )}
+        </button>
+
+        <span className="flex h-8 items-center font-mono text-xs tabular-nums text-zinc-400 ml-2 md:ml-3 md:h-9 md:text-sm">
           {formatTime(currentTime)}
           <span className="mx-1.5 text-zinc-300 dark:text-zinc-600">/</span>
           {formatTime(duration)}
