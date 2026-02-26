@@ -14,6 +14,19 @@ interface AudioPlayerProps {
 
 const SPEED_OPTIONS = [0.5, 0.7, 1.0, 1.2, 1.5, 1.7, 2.0, 2.5, 3.0, 4.0];
 
+function Tooltip({ label, shortcut }: { label: string; shortcut: string }) {
+  return (
+    <div className="pointer-events-none absolute bottom-full left-1/2 mb-2 -translate-x-1/2 opacity-0 transition-opacity group-hover/tip:opacity-100">
+      <div className="flex items-center gap-2 whitespace-nowrap rounded-lg border border-zinc-200 bg-white px-2.5 py-1.5 text-xs shadow-sm dark:border-zinc-700 dark:bg-zinc-900">
+        <span className="text-zinc-500 dark:text-zinc-400">{label}</span>
+        <kbd className="rounded bg-zinc-100 px-1.5 py-0.5 font-mono text-[10px] leading-none text-zinc-400 dark:bg-zinc-800 dark:text-zinc-500">
+          {shortcut}
+        </kbd>
+      </div>
+    </div>
+  );
+}
+
 export const AudioPlayer = forwardRef<AudioPlayerHandle, AudioPlayerProps>(function AudioPlayer(
   { src, onTimeUpdate },
   ref,
@@ -72,7 +85,34 @@ export const AudioPlayer = forwardRef<AudioPlayerHandle, AudioPlayerProps>(funct
     return () => document.removeEventListener("mousedown", handleClick);
   }, [showSpeedMenu]);
 
-  const togglePlay = () => {
+  const togglePlayRef = useRef(togglePlay);
+  togglePlayRef.current = togglePlay;
+  const stepSpeedRef = useRef(stepSpeed);
+  stepSpeedRef.current = stepSpeed;
+
+  // Keyboard shortcuts
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Ignore if user is typing in an input/textarea
+      const tag = (e.target as HTMLElement).tagName;
+      if (tag === "INPUT" || tag === "TEXTAREA" || (e.target as HTMLElement).isContentEditable) return;
+
+      if (e.code === "Space") {
+        e.preventDefault();
+        togglePlayRef.current();
+      } else if (e.code === "ArrowLeft") {
+        e.preventDefault();
+        stepSpeedRef.current(-1);
+      } else if (e.code === "ArrowRight") {
+        e.preventDefault();
+        stepSpeedRef.current(1);
+      }
+    };
+    document.addEventListener("keydown", handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown);
+  }, []);
+
+  function togglePlay() {
     if (!audioRef.current) return;
     if (isPlaying) {
       audioRef.current.pause();
@@ -80,7 +120,7 @@ export const AudioPlayer = forwardRef<AudioPlayerHandle, AudioPlayerProps>(funct
       audioRef.current.play();
     }
     setIsPlaying(!isPlaying);
-  };
+  }
 
   const handleSeek = (e: React.MouseEvent<HTMLDivElement>) => {
     if (!audioRef.current || !duration) return;
@@ -89,13 +129,13 @@ export const AudioPlayer = forwardRef<AudioPlayerHandle, AudioPlayerProps>(funct
     audioRef.current.currentTime = pct * duration;
   };
 
-  const stepSpeed = (direction: number) => {
+  function stepSpeed(direction: number) {
     const idx = SPEED_OPTIONS.indexOf(playbackRate);
     const next = idx + direction;
     if (next >= 0 && next < SPEED_OPTIONS.length) {
       changeSpeed(SPEED_OPTIONS[next]);
     }
-  };
+  }
 
   const changeSpeed = (rate: number) => {
     setPlaybackRate(rate);
@@ -126,7 +166,7 @@ export const AudioPlayer = forwardRef<AudioPlayerHandle, AudioPlayerProps>(funct
 
       {/* Seek bar */}
       <div
-        className="group relative h-1 w-full cursor-pointer bg-zinc-200 transition-all hover:h-1.5 dark:bg-zinc-800"
+        className="group/seek relative h-1 w-full cursor-pointer bg-zinc-200 transition-all hover:h-1.5 dark:bg-zinc-800"
         onClick={handleSeek}
       >
         <div
@@ -134,7 +174,7 @@ export const AudioPlayer = forwardRef<AudioPlayerHandle, AudioPlayerProps>(funct
           style={{ width: `${progress}%` }}
         />
         <div
-          className="absolute top-1/2 h-3 w-3 -translate-x-1/2 -translate-y-1/2 rounded-full bg-amber-500 opacity-0 shadow-sm transition-opacity group-hover:opacity-100"
+          className="absolute top-1/2 h-3 w-3 -translate-x-1/2 -translate-y-1/2 rounded-full bg-amber-500 opacity-0 shadow-sm transition-opacity group-hover/seek:opacity-100"
           style={{ left: `${progress}%` }}
         />
       </div>
@@ -143,13 +183,16 @@ export const AudioPlayer = forwardRef<AudioPlayerHandle, AudioPlayerProps>(funct
       <div className="flex items-center justify-center gap-3 px-4 py-3 md:gap-4">
         {/* Speed control */}
         <div className="flex h-8 items-center md:h-9">
-          <button
-            onClick={() => stepSpeed(-1)}
-            disabled={SPEED_OPTIONS.indexOf(playbackRate) <= 0}
-            className="flex h-8 w-5 items-center justify-center text-xs text-zinc-300 transition-colors hover:text-zinc-600 disabled:opacity-0 md:h-9 md:w-6 md:text-sm dark:text-zinc-600 dark:hover:text-zinc-300"
-          >
-            &lt;
-          </button>
+          <div className="group/tip relative">
+            <Tooltip label="Slower" shortcut="←" />
+            <button
+              onClick={() => stepSpeed(-1)}
+              disabled={SPEED_OPTIONS.indexOf(playbackRate) <= 0}
+              className="flex h-8 w-5 items-center justify-center text-xs text-zinc-300 transition-colors hover:text-zinc-600 disabled:opacity-0 md:h-9 md:w-6 md:text-sm dark:text-zinc-600 dark:hover:text-zinc-300"
+            >
+              &lt;
+            </button>
+          </div>
           <div ref={speedMenuRef} className="relative">
             <button
               onClick={() => setShowSpeedMenu(!showSpeedMenu)}
@@ -180,31 +223,37 @@ export const AudioPlayer = forwardRef<AudioPlayerHandle, AudioPlayerProps>(funct
               </div>
             )}
           </div>
-          <button
-            onClick={() => stepSpeed(1)}
-            disabled={SPEED_OPTIONS.indexOf(playbackRate) >= SPEED_OPTIONS.length - 1}
-            className="flex h-8 w-5 items-center justify-center text-xs text-zinc-300 transition-colors hover:text-zinc-600 disabled:opacity-0 md:h-9 md:w-6 md:text-sm dark:text-zinc-600 dark:hover:text-zinc-300"
-          >
-            &gt;
-          </button>
+          <div className="group/tip relative">
+            <Tooltip label="Faster" shortcut="→" />
+            <button
+              onClick={() => stepSpeed(1)}
+              disabled={SPEED_OPTIONS.indexOf(playbackRate) >= SPEED_OPTIONS.length - 1}
+              className="flex h-8 w-5 items-center justify-center text-xs text-zinc-300 transition-colors hover:text-zinc-600 disabled:opacity-0 md:h-9 md:w-6 md:text-sm dark:text-zinc-600 dark:hover:text-zinc-300"
+            >
+              &gt;
+            </button>
+          </div>
         </div>
 
         {/* Play/pause */}
-        <button
-          onClick={togglePlay}
-          className="flex h-8 w-8 items-center justify-center rounded-full bg-amber-500 text-white transition-all hover:bg-amber-400 active:scale-95 md:h-9 md:w-9"
-        >
-          {isPlaying ? (
-            <svg className="h-3 w-3 md:h-3.5 md:w-3.5" viewBox="0 0 14 14" fill="currentColor">
-              <rect x="2" y="1" width="4" height="12" rx="1" />
-              <rect x="8" y="1" width="4" height="12" rx="1" />
-            </svg>
-          ) : (
-            <svg className="h-3 w-3 md:h-3.5 md:w-3.5" viewBox="0 0 14 14" fill="currentColor">
-              <path d="M4 1.5v11l8-5.5z" />
-            </svg>
-          )}
-        </button>
+        <div className="group/tip relative">
+          <Tooltip label={isPlaying ? "Pause" : "Play"} shortcut="Space" />
+          <button
+            onClick={togglePlay}
+            className="flex h-8 w-8 items-center justify-center rounded-full bg-amber-500 text-white transition-all hover:bg-amber-400 active:scale-95 md:h-9 md:w-9"
+          >
+            {isPlaying ? (
+              <svg className="h-3 w-3 md:h-3.5 md:w-3.5" viewBox="0 0 14 14" fill="currentColor">
+                <rect x="2" y="1" width="4" height="12" rx="1" />
+                <rect x="8" y="1" width="4" height="12" rx="1" />
+              </svg>
+            ) : (
+              <svg className="h-3 w-3 md:h-3.5 md:w-3.5" viewBox="0 0 14 14" fill="currentColor">
+                <path d="M4 1.5v11l8-5.5z" />
+              </svg>
+            )}
+          </button>
+        </div>
 
         <span className="flex h-8 items-center font-mono text-xs tabular-nums text-zinc-400 ml-2 md:ml-3 md:h-9 md:text-sm">
           {formatTime(currentTime)}
