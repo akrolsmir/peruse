@@ -1,4 +1,5 @@
 import { query, mutation } from "./_generated/server";
+import { internal } from "./_generated/api";
 import { v } from "convex/values";
 import { uniqueSlug } from "./slugs";
 
@@ -128,6 +129,34 @@ export const clone = mutation({
       createdAt: Date.now(),
     });
     return { id: newId, slug };
+  },
+});
+
+export const startProcessing = mutation({
+  args: {
+    id: v.id("episodes"),
+    url: v.string(),
+    model: v.string(),
+    minSpeakers: v.optional(v.number()),
+  },
+  handler: async (ctx, args) => {
+    await ctx.scheduler.runAfter(0, internal.processing.processEpisode, {
+      id: args.id,
+      url: args.url,
+      model: args.model,
+      minSpeakers: args.minSpeakers,
+    });
+  },
+});
+
+export const startReprocessing = mutation({
+  args: {
+    id: v.id("episodes"),
+  },
+  handler: async (ctx, args) => {
+    await ctx.scheduler.runAfter(0, internal.processing.reprocessEpisode, {
+      id: args.id,
+    });
   },
 });
 

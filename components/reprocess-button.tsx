@@ -6,6 +6,7 @@ import { useState } from "react";
 
 export function ReprocessButton({ episodeId }: { episodeId: string }) {
   const cloneEpisode = useMutation(api.episodes.clone);
+  const startReprocessing = useMutation(api.episodes.startReprocessing);
   const [reprocessing, setReprocessing] = useState(false);
 
   const handleReprocess = async (e: React.MouseEvent) => {
@@ -14,11 +15,7 @@ export function ReprocessButton({ episodeId }: { episodeId: string }) {
     setReprocessing(true);
     try {
       const { id } = await cloneEpisode({ id: episodeId as never });
-      await fetch("/api/reprocess", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ episodeId: id }),
-      });
+      await startReprocessing({ id: id as never });
     } catch (err) {
       console.error("Reprocess failed:", err);
     } finally {

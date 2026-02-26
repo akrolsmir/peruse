@@ -2,9 +2,6 @@ import { NextRequest, NextResponse } from "next/server";
 import { ConvexHttpClient } from "convex/browser";
 import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
-import { validateAudioUrl } from "@/lib/audio";
-import { createASR, type ASRModel } from "@/lib/transcribe";
-import { postProcess } from "@/lib/postprocess";
 
 function getConvex() {
   return new ConvexHttpClient(process.env.NEXT_PUBLIC_CONVEX_URL!);
@@ -13,7 +10,6 @@ function getConvex() {
 export async function POST(req: NextRequest) {
   const { episodeId, url, model, minSpeakers } = await req.json();
   const id = episodeId as Id<"episodes">;
-  const asrModel = (model || "whisper") as ASRModel;
 
   // If no URL provided, fetch it from the episode record
   let audioSource = url as string | undefined;
@@ -25,86 +21,13 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "No audio URL" }, { status: 400 });
   }
 
-  processPipeline(id, audioSource, asrModel, minSpeakers as number | undefined).catch((err) => {
-    console.error("Pipeline error:", err);
+  // Schedule the processing action in Convex
+  await getConvex().mutation(api.episodes.startProcessing, {
+    id,
+    url: audioSource,
+    model: model || "whisper",
+    ...(minSpeakers ? { minSpeakers } : {}),
   });
 
   return NextResponse.json({ ok: true });
-}
-
-async function processPipeline(
-  id: Id<"episodes">,
-  url: string,
-  model: ASRModel,
-  minSpeakers?: number,
-) {
-  try {
-    await getConvex().mutation(api.episodes.updateStatus, {
-      id,
-      status: "downloading",
-    });
-
-    // Skip validation for Convex storage URLs — they're already direct links
-    const isConvexUrl = url.includes(".convex.cloud/");
-    const audioUrl = isConvexUrl ? url : await validateAudioUrl(url);
-    await getConvex().mutation(api.episodes.updateStatus, {
-      id,
-      status: "downloading",
-      audioUrl,
-    });
-
-    await getConvex().mutation(api.episodes.updateStatus, {
-      id,
-      status: "transcribing",
-    });
-
-    const asr = createASR(model);
-    const segments = await asr.transcribe(audioUrl, { minSpeakers });
-    const rawTranscript = JSON.stringify(segments);
-
-    await getConvex().mutation(api.episodes.update, {
-      id,
-      rawTranscript,
-    });
-
-    await getConvex().mutation(api.episodes.updateStatus, {
-      id,
-      status: "processing",
-    });
-
-    const episode = await getConvex().query(api.episodes.getById, { id });
-    let feedDescription: string | undefined;
-    if (episode?.feedId) {
-      const feed = await getConvex().query(api.feeds.getById, { id: episode.feedId });
-      feedDescription = feed?.description ?? undefined;
-    }
-    await postProcess(
-      segments,
-      {
-        async onChunkDone(paragraphs) {
-          await getConvex().mutation(api.episodes.update, {
-            id,
-            transcript: JSON.stringify(paragraphs),
-          });
-        },
-        async onSummaryDone(summary, chapters, speakerNames) {
-          await getConvex().mutation(api.episodes.update, {
-            id,
-            summary,
-            chapters: JSON.stringify(chapters),
-            status: "done",
-            ...(speakerNames.length > 0 ? { speakerNames } : {}),
-          });
-        },
-      },
-      { title: episode?.title, description: episode?.description, feedDescription },
-    );
-  } catch (err) {
-    console.error("Pipeline failed:", err);
-    await getConvex().mutation(api.episodes.updateStatus, {
-      id,
-      status: "error",
-      error: err instanceof Error ? err.message : "Unknown error",
-    });
-  }
 }

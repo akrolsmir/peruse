@@ -10,6 +10,7 @@
 
 import type * as episodes from "../episodes.js";
 import type * as feeds from "../feeds.js";
+import type * as processing from "../processing.js";
 import type * as slugs from "../slugs.js";
 
 import type {
@@ -21,6 +22,7 @@ import type {
 declare const fullApi: ApiFromModules<{
   episodes: typeof episodes;
   feeds: typeof feeds;
+  processing: typeof processing;
   slugs: typeof slugs;
 }>;
 

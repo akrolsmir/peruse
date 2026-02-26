@@ -2,8 +2,6 @@ import { NextRequest, NextResponse } from "next/server";
 import { ConvexHttpClient } from "convex/browser";
 import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
-import { postProcess } from "@/lib/postprocess";
-import type { TranscriptSegment } from "@/lib/transcribe";
 
 function getConvex() {
   return new ConvexHttpClient(process.env.NEXT_PUBLIC_CONVEX_URL!);
@@ -13,60 +11,8 @@ export async function POST(req: NextRequest) {
   const { episodeId } = await req.json();
   const id = episodeId as Id<"episodes">;
 
-  reprocessPipeline(id).catch((err) => {
-    console.error("Reprocess error:", err);
-  });
+  // Schedule the reprocessing action in Convex
+  await getConvex().mutation(api.episodes.startReprocessing, { id });
 
   return NextResponse.json({ ok: true });
-}
-
-async function reprocessPipeline(id: Id<"episodes">) {
-  try {
-    const episode = await getConvex().query(api.episodes.getById, { id });
-    if (!episode?.rawTranscript) {
-      throw new Error("No raw transcript to reprocess");
-    }
-
-    await getConvex().mutation(api.episodes.updateStatus, {
-      id,
-      status: "processing",
-    });
-
-    const segments: TranscriptSegment[] = JSON.parse(episode.rawTranscript);
-
-    let feedDescription: string | undefined;
-    if (episode.feedId) {
-      const feed = await getConvex().query(api.feeds.getById, { id: episode.feedId });
-      feedDescription = feed?.description ?? undefined;
-    }
-
-    await postProcess(
-      segments,
-      {
-        async onChunkDone(paragraphs) {
-          await getConvex().mutation(api.episodes.update, {
-            id,
-            transcript: JSON.stringify(paragraphs),
-          });
-        },
-        async onSummaryDone(summary, chapters, speakerNames) {
-          await getConvex().mutation(api.episodes.update, {
-            id,
-            summary,
-            chapters: JSON.stringify(chapters),
-            status: "done",
-            ...(speakerNames.length > 0 ? { speakerNames } : {}),
-          });
-        },
-      },
-      { title: episode.title, description: episode.description, feedDescription },
-    );
-  } catch (err) {
-    console.error("Reprocess failed:", err);
-    await getConvex().mutation(api.episodes.updateStatus, {
-      id,
-      status: "error",
-      error: err instanceof Error ? err.message : "Unknown error",
-    });
-  }
 }

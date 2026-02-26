@@ -31,6 +31,7 @@ export function UploadForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const createEpisode = useMutation(api.episodes.create);
+  const startProcessing = useMutation(api.episodes.startProcessing);
   const generateUploadUrl = useMutation(api.episodes.generateUploadUrl);
   const [sourceMode, setSourceMode] = useState<SourceMode>("url");
   const [url, setUrl] = useState(searchParams.get("url") || "");
@@ -69,15 +70,11 @@ export function UploadForm() {
         const { id: episodeId, slug } = result as { id: string; slug: string };
         episodeSlug = slug;
 
-        await fetch("/api/process", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            episodeId,
-            url: url.trim(),
-            model,
-            ...(model === "whisperx" ? { minSpeakers } : {}),
-          }),
+        await startProcessing({
+          id: episodeId as Id<"episodes">,
+          url: url.trim(),
+          model,
+          ...(model === "whisperx" ? { minSpeakers } : {}),
         });
       } else {
         if (!file) return;
@@ -113,15 +110,11 @@ export function UploadForm() {
         };
         episodeSlug = slug;
 
-        await fetch("/api/process", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            episodeId,
-            url: audioUrl,
-            model,
-            ...(model === "whisperx" ? { minSpeakers } : {}),
-          }),
+        await startProcessing({
+          id: episodeId as Id<"episodes">,
+          url: audioUrl,
+          model,
+          ...(model === "whisperx" ? { minSpeakers } : {}),
         });
       }
 
