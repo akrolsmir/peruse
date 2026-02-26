@@ -9,7 +9,8 @@ peruse helps podcasters and listeners get excellent transcripts
   - CEOs (mostly) don't have time to write big public essays. But they're happy to sit down for two hours to talk through their views.
 - Compared to essays or talks, podcasts are special for their interviewer/interviewee dynamic: allowing back and forth, debate, follow ups. A good host acts as the listener's proxy.
 - I like playing with cool UXs.
-  - For podcast transcripts specifically, I'm very inspired by the experience that 80K, Dwarkesh, and Hope in Source offer.
+  - For podcast transcripts specifically, I'm very inspired by the experience that 80K and Hope in Source offer.
+  - Other podcasts that have great transcripts: Dwarkesh, Complex Systems
   - More broadly, I love the reading experiences of gwern, LessWrong, and Practical Typography
   - As well as a lot of blogs from technical folks ([jefftk.com], [kipp.ly], [venki.dev], [benkuhn.net], [ekzhang.com])
 - Also: the tech is here! Transcription has fallen drastically in costs, and LLM script editing has gotten much better
@@ -51,9 +52,9 @@ Soon
 
 ## TODOs
 
-- player improvements:
-  - variable speed
-  - styling (center)
+- [x] player improvements:
+  - [x] variable speed
+  - [x] styling (center)
 - episode page:
   - [x] show titles as headers
   - [x] shorter slugify (no cruft at end)
