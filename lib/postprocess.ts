@@ -190,8 +190,8 @@ For each paragraph, provide the start and end timestamps (in seconds) and the cl
 Rules:
 - Remove filler words (um, uh, like, you know) unless they add meaning
 - Fix obvious speech recognition errors
-- Preserve the speaker's meaning and tone, using their words where possible
-- Group related sentences into paragraphs (2-5 sentences each)
+- Preserve the speaker's meaning and tone, using their specific words where possible
+- Group related sentences into paragraphs (2-5 sentences each). Prefer shorter paragraphs, around 30-50 words.
 - Keep timestamps accurate${speakerRules}
 
 Transcript chunk:
