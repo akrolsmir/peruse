@@ -105,6 +105,9 @@ export function EpisodeDetail({ slug }: { slug: string }) {
 
   const handleSeek = (time: number) => {
     playerRef.current?.seekTo(time);
+    const url = new URL(window.location.href);
+    url.searchParams.set("t", String(Math.floor(time)));
+    window.history.replaceState(null, "", url.toString());
   };
 
   const showChapterNav = chapters.length > 0 && (hasContent || paragraphs.length > 0);
