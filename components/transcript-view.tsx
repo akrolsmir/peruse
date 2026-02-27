@@ -20,6 +20,7 @@ interface TranscriptViewProps {
   chapters?: Chapter[];
   speakerNames?: string[];
   currentTime: number;
+  highlightedParagraph?: number | null;
   onSeek: (time: number) => void;
   onSpeakerNameChange?: (index: number, name: string) => void;
 }
@@ -121,6 +122,7 @@ export function TranscriptView({
   chapters,
   speakerNames,
   currentTime,
+  highlightedParagraph,
   onSeek,
   onSpeakerNameChange,
 }: TranscriptViewProps) {
@@ -153,8 +155,10 @@ export function TranscriptView({
         const showSpeaker = speaker !== null && speaker !== prevSpeaker;
         const chapter = chapterInsertions.get(i);
 
+        const isHighlighted = highlightedParagraph === i;
+
         return (
-          <div key={i}>
+          <div key={i} id={`p-${i}`} className="scroll-mt-24">
             {chapter && (
               <div
                 id={`chapter-${chapters!.indexOf(chapter)}`}
@@ -190,7 +194,7 @@ export function TranscriptView({
               )}
               <div
                 className={`group relative border-l-2 py-2.5 pl-4 pr-2 transition-colors duration-200 ${
-                  isActive
+                  isActive || isHighlighted
                     ? "border-amber-500 bg-amber-50/60 dark:bg-amber-950/20"
                     : "border-transparent hover:border-zinc-200 hover:bg-zinc-50/80 dark:hover:border-zinc-700 dark:hover:bg-zinc-900/50"
                 }`}

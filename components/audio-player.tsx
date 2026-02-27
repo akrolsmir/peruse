@@ -5,6 +5,7 @@ import { formatTimestamp } from "@/lib/format";
 
 export interface AudioPlayerHandle {
   seekTo: (time: number) => void;
+  seekWithoutPlaying: (time: number) => void;
   getCurrentTime: () => number;
 }
 
@@ -46,6 +47,11 @@ export const AudioPlayer = forwardRef<AudioPlayerHandle, AudioPlayerProps>(funct
         audioRef.current.currentTime = time;
         audioRef.current.play();
         setIsPlaying(true);
+      }
+    },
+    seekWithoutPlaying(time: number) {
+      if (audioRef.current) {
+        audioRef.current.currentTime = time;
       }
     },
     getCurrentTime() {

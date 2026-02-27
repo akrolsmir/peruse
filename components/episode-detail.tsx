@@ -2,7 +2,7 @@
 
 import { useQuery, useMutation } from "convex/react";
 import { api } from "@/convex/_generated/api";
-import { useRef, useState, useCallback } from "react";
+import { useRef, useState, useCallback, useEffect } from "react";
 import { AudioPlayer, type AudioPlayerHandle } from "@/components/audio-player";
 import { TranscriptView } from "@/components/transcript-view";
 import { RawTranscriptView } from "@/components/raw-transcript-view";
@@ -10,6 +10,7 @@ import { SyncedTranscriptView } from "@/components/synced-transcript-view";
 import { ChapterNav } from "@/components/chapter-nav";
 import { StatusBadge } from "@/components/status-badge";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 
 interface Chapter {
   title: string;
@@ -21,8 +22,11 @@ export function EpisodeDetail({ slug }: { slug: string }) {
   const feed = useQuery(api.feeds.getById, episode?.feedId ? { id: episode.feedId } : "skip");
   const updateEpisode = useMutation(api.episodes.update);
   const playerRef = useRef<AudioPlayerHandle>(null);
+  const searchParams = useSearchParams();
   const [currentTime, setCurrentTime] = useState(0);
   const [viewMode, setViewMode] = useState<"cleaned" | "both" | "raw" | "json">("cleaned");
+  const [highlightedParagraph, setHighlightedParagraph] = useState<number | null>(null);
+  const didScrollToTime = useRef(false);
 
   const handleSpeakerNameChange = useCallback(
     (index: number, name: string) => {
@@ -34,6 +38,37 @@ export function EpisodeDetail({ slug }: { slug: string }) {
     },
     [episode, updateEpisode],
   );
+
+  // Handle ?t= query parameter: scroll to paragraph, highlight it, seek player
+  useEffect(() => {
+    if (didScrollToTime.current) return;
+    const tParam = searchParams.get("t");
+    if (!tParam || !episode) return;
+    const t = parseFloat(tParam);
+    if (isNaN(t)) return;
+
+    const paras = episode.transcript ? JSON.parse(episode.transcript) : [];
+    if (paras.length === 0) return;
+
+    // Find the last paragraph whose start <= t
+    let targetIdx = 0;
+    for (let i = 0; i < paras.length; i++) {
+      if (Math.floor(paras[i].start) <= t) targetIdx = i;
+      else break;
+    }
+
+    didScrollToTime.current = true;
+    setHighlightedParagraph(targetIdx);
+    playerRef.current?.seekWithoutPlaying(t);
+
+    requestAnimationFrame(() => {
+      const el = document.getElementById(`p-${targetIdx}`);
+      if (el) el.scrollIntoView({ behavior: "smooth", block: "center" });
+    });
+
+    const timer = setTimeout(() => setHighlightedParagraph(null), 4000);
+    return () => clearTimeout(timer);
+  }, [searchParams, episode]);
 
   if (episode === undefined) {
     return (
@@ -244,6 +279,7 @@ export function EpisodeDetail({ slug }: { slug: string }) {
                     chapters={chapters}
                     speakerNames={speakerNames}
                     currentTime={currentTime}
+                    highlightedParagraph={highlightedParagraph}
                     onSeek={handleSeek}
                     onSpeakerNameChange={handleSpeakerNameChange}
                   />
