@@ -59,7 +59,7 @@ Soon
   - [x] show titles as headers
   - [x] shorter slugify (no cruft at end)
   - export entire script to markdown
-  - tap to change speaker description
+  - [x] tap to change speaker description
     - (maybe more ways to edit things in general)
     - big brain: speak directly with ai to change things!!
   - [x] backlink to the podcast
@@ -67,7 +67,7 @@ Soon
 - bugs
   - [x] pass episode description as a hint to parsing => not sure this is an improvement tho
   - dropped transcript before "passion capital wins" on /social-radars-with-tom-3-speakers-align-output-mlx23ryw
-  - fix the timestamps so they're consistent (no jumping)
+  - [x] fix the timestamps so they're consistent (no jumping)
 - code smells:
   - feeds should probably load 1mb of data; make a subtable instead?
   - consolidate prompts
