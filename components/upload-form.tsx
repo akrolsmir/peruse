@@ -133,7 +133,7 @@ export function UploadForm() {
           htmlFor="title"
           className="mb-2 block text-xs font-semibold uppercase tracking-widest text-zinc-400"
         >
-          Title (optional)
+          Title
         </label>
         <input
           id="title"
@@ -150,14 +150,14 @@ export function UploadForm() {
           htmlFor="description"
           className="mb-2 block text-xs font-semibold uppercase tracking-widest text-zinc-400"
         >
-          Description (optional)
+          Description
         </label>
         <textarea
           id="description"
           value={description}
           onChange={(e) => setDescription(e.target.value)}
           placeholder="Episode description or show notes"
-          rows={3}
+          rows={6}
           className="w-full rounded-xl border border-zinc-200 bg-white px-4 py-3 text-sm text-zinc-900 placeholder:text-zinc-300 transition-colors focus:border-amber-500 focus:outline-none focus:ring-1 focus:ring-amber-500/20 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-100 dark:placeholder:text-zinc-600"
         />
       </div>
@@ -235,6 +235,7 @@ export function UploadForm() {
         </div>
       )}
 
+      {/* Model selector — hidden, always using whisperx
       <fieldset>
         <legend className="mb-3 block text-xs font-semibold uppercase tracking-widest text-zinc-400">
           Transcription Model
@@ -274,26 +275,25 @@ export function UploadForm() {
           ))}
         </div>
       </fieldset>
+      */}
 
-      {model === "whisperx" && (
-        <div>
-          <label
-            htmlFor="minSpeakers"
-            className="mb-2 block text-xs font-semibold uppercase tracking-widest text-zinc-400"
-          >
-            Number of Speakers
-          </label>
-          <input
-            id="minSpeakers"
-            type="number"
-            min={1}
-            max={20}
-            value={minSpeakers}
-            onChange={(e) => setMinSpeakers(Math.max(1, parseInt(e.target.value) || 1))}
-            className="w-24 rounded-xl border border-zinc-200 bg-white px-4 py-3 text-sm text-zinc-900 transition-colors focus:border-amber-500 focus:outline-none focus:ring-1 focus:ring-amber-500/20 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-100"
-          />
-        </div>
-      )}
+      <div>
+        <label
+          htmlFor="minSpeakers"
+          className="mb-2 block text-xs font-semibold uppercase tracking-widest text-zinc-400"
+        >
+          Number of Speakers
+        </label>
+        <input
+          id="minSpeakers"
+          type="number"
+          min={1}
+          max={20}
+          value={minSpeakers}
+          onChange={(e) => setMinSpeakers(Math.max(1, parseInt(e.target.value) || 1))}
+          className="w-24 rounded-xl border border-zinc-200 bg-white px-4 py-3 text-sm text-zinc-900 transition-colors focus:border-amber-500 focus:outline-none focus:ring-1 focus:ring-amber-500/20 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-100"
+        />
+      </div>
 
       {error && (
         <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-red-900/50 dark:bg-red-950/20 dark:text-red-400">
