@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useQuery, useMutation } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
+import { EpisodeCard } from "@/components/episode-card";
 
 interface FeedEpisode {
   guid: string;
@@ -37,6 +38,10 @@ function formatDuration(raw: string): string {
 
 export function FeedDetail({ slug }: { slug: string }) {
   const feed = useQuery(api.feeds.getBySlug, { slug });
+  const transcribedEpisodes = useQuery(
+    api.episodes.listByFeed,
+    feed?._id ? { feedId: feed._id } : "skip",
+  );
   const updateEpisodes = useMutation(api.feeds.updateEpisodes);
   const [refreshing, setRefreshing] = useState(false);
 
@@ -94,10 +99,24 @@ export function FeedDetail({ slug }: { slug: string }) {
             {feed.title}
           </h1>
           {feed.description && (
-            <p className="mt-1 line-clamp-2 text-sm text-zinc-400">{feed.description}</p>
+            <p className="mt-1 line-clamp-3 text-sm text-zinc-400">{feed.description}</p>
           )}
         </div>
       </div>
+
+      {/* Transcribed episodes */}
+      {transcribedEpisodes && transcribedEpisodes.length > 0 && (
+        <div className="mb-10">
+          <h2 className="mb-4 text-xs font-semibold uppercase tracking-widest text-zinc-400">
+            Transcribed
+          </h2>
+          <div className="space-y-2">
+            {transcribedEpisodes.map((ep) => (
+              <EpisodeCard key={ep._id} episode={ep} />
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Actions */}
       <div className="mb-6 flex items-center justify-between">
@@ -132,49 +151,63 @@ export function FeedDetail({ slug }: { slug: string }) {
       </div>
 
       {/* Episode list */}
-      <div className="space-y-2">
-        {episodes.map((ep) => {
-          const pubDate = ep.pubDate
-            ? new Date(ep.pubDate).toLocaleDateString("en-US", {
-                month: "short",
-                day: "numeric",
-                year: "numeric",
-              })
-            : null;
+      {(() => {
+        const transcribedTitles = new Set(
+          (transcribedEpisodes ?? []).map((ep) => ep.title),
+        );
 
-          const transcribeParams = new URLSearchParams();
-          if (ep.title) transcribeParams.set("title", ep.title);
-          if (ep.audioUrl) transcribeParams.set("url", ep.audioUrl);
-          if (ep.description) transcribeParams.set("description", ep.description);
-          transcribeParams.set("feedId", feed._id);
+        return (
+          <div className="divide-y divide-zinc-100 dark:divide-zinc-800/60">
+            {episodes.map((ep) => {
+              const pubDate = ep.pubDate
+                ? new Date(ep.pubDate).toLocaleDateString("en-US", {
+                    month: "short",
+                    day: "numeric",
+                  })
+                : null;
 
-          return (
-            <div
-              key={ep.guid}
-              className="flex items-center justify-between rounded-xl border border-zinc-200 px-5 py-4 dark:border-zinc-800"
-            >
-              <div className="min-w-0 flex-1 pr-4">
-                <h3 className="truncate text-[15px] font-medium text-zinc-900 dark:text-zinc-100">
-                  {ep.title}
-                </h3>
-                <div className="mt-1 flex items-center gap-2 text-xs text-zinc-400">
-                  {pubDate && <time>{pubDate}</time>}
-                  {pubDate && ep.duration && <span>·</span>}
-                  {ep.duration && <span>{formatDuration(ep.duration)}</span>}
-                </div>
-              </div>
-              {ep.audioUrl && (
-                <Link
-                  href={`/upload?${transcribeParams.toString()}`}
-                  className="shrink-0 rounded-lg bg-amber-500 px-3 py-1.5 text-xs font-medium text-white transition-all hover:bg-amber-400 active:scale-95"
+              const isTranscribed = transcribedTitles.has(ep.title);
+
+              const transcribeParams = new URLSearchParams();
+              if (ep.title) transcribeParams.set("title", ep.title);
+              if (ep.audioUrl) transcribeParams.set("url", ep.audioUrl);
+              if (ep.description) transcribeParams.set("description", ep.description);
+              transcribeParams.set("feedId", feed._id);
+
+              return (
+                <div
+                  key={ep.guid}
+                  className="flex items-center gap-3 py-2.5 transition-colors hover:bg-zinc-50/60 dark:hover:bg-zinc-900/40"
                 >
-                  Transcribe
-                </Link>
-              )}
-            </div>
-          );
-        })}
-      </div>
+                  <h3 className="min-w-0 flex-1 truncate text-sm text-zinc-800 dark:text-zinc-200">
+                    {ep.title}
+                  </h3>
+                  <span className="shrink-0 text-xs tabular-nums text-zinc-300 dark:text-zinc-600">
+                    {ep.duration ? formatDuration(ep.duration) : ""}
+                  </span>
+                  {pubDate && (
+                    <time className="w-16 shrink-0 text-right text-xs tabular-nums text-zinc-300 dark:text-zinc-600">
+                      {pubDate}
+                    </time>
+                  )}
+                  {ep.audioUrl && (
+                    <Link
+                      href={`/upload?${transcribeParams.toString()}`}
+                      className={`shrink-0 rounded-md px-2.5 py-1 text-xs font-medium transition-all active:scale-95 ${
+                        isTranscribed
+                          ? "border border-amber-400/60 text-amber-600 hover:bg-amber-50 dark:border-amber-500/40 dark:text-amber-400 dark:hover:bg-amber-950/30"
+                          : "bg-amber-500 text-white hover:bg-amber-400"
+                      }`}
+                    >
+                      Transcribe
+                    </Link>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        );
+      })()}
     </div>
   );
 }

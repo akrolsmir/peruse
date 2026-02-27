@@ -24,7 +24,9 @@ export default defineSchema({
     description: v.optional(v.string()),
     feedId: v.optional(v.id("feeds")),
     createdAt: v.number(),
-  }).index("by_slug", ["slug"]),
+  })
+    .index("by_slug", ["slug"])
+    .index("by_feedId", ["feedId"]),
 
   feeds: defineTable({
     feedUrl: v.string(),

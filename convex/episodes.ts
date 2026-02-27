@@ -31,6 +31,25 @@ export const listRecent = query({
   },
 });
 
+export const listByFeed = query({
+  args: { feedId: v.id("feeds") },
+  handler: async (ctx, args) => {
+    const episodes = await ctx.db
+      .query("episodes")
+      .withIndex("by_feedId", (q) => q.eq("feedId", args.feedId))
+      .order("desc")
+      .collect();
+    return episodes.map((ep) => ({
+      _id: ep._id,
+      title: ep.title,
+      slug: ep.slug,
+      status: ep.status,
+      hasRawTranscript: !!ep.rawTranscript,
+      createdAt: ep.createdAt,
+    }));
+  },
+});
+
 export const getById = query({
   args: { id: v.id("episodes") },
   handler: async (ctx, args) => {
