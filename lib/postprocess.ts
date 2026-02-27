@@ -31,7 +31,8 @@ export interface ProgressCallback {
 
 // const MODEL = "claude-haiku-4-5-20251001";
 const MODEL = "claude-sonnet-4-6";
-const CHUNK_DURATION = 60; // 1 minute in seconds
+const CHUNK_DURATION = 240; // 4 minutes in seconds
+const BATCH_SIZE = 4;
 
 const chunkSchema = {
   type: "object" as const,
@@ -105,16 +106,15 @@ function chunkSegments(segments: TranscriptSegment[]): TranscriptSegment[][] {
 //     │
 //     ▼
 //   ┌─────────────────────────────────┐
-//   │  Split into ~60s chunks         │
+//   │  Split into ~4min chunks        │
 //   └──────────────┬──────────────────┘
 //                  │
-//                  │
-//                  ▼  (sequential, one chunk at a time)
+//                  ▼  (parallel, batches of 4)
 //   ┌─────────────────────────────────┐
 //   │  Claude: clean chunk            │    Remove filler words, fix ASR
-//   │  (repeat for each chunk)        │    errors, group into paragraphs
+//   │  (batch of chunks in parallel)  │    errors, group into paragraphs
 //   └──────────────┬──────────────────┘    w/ timestamps & speakers
-//                ▼
+//                  ▼
 //   ┌─────────────────────────────────┐
 //   │  Merge all cleaned paragraphs   │
 //   └──────────────┬──────────────────┘
@@ -127,7 +127,7 @@ function chunkSegments(segments: TranscriptSegment[]): TranscriptSegment[][] {
 //   PostProcessedResult { paragraphs, summary, chapters, speakerNames }
 //
 // Episode title/description are included as context in prompts when available.
-// Progress callbacks fire after each chunk and after the summary step.
+// Progress callbacks fire after each batch and after the summary step.
 export async function postProcess(
   segments: TranscriptSegment[],
   progress?: ProgressCallback,
@@ -140,6 +140,8 @@ export async function postProcess(
 ): Promise<PostProcessedResult> {
   const client = new Anthropic();
   const hasSpeakers = segments.some((s) => s.speaker);
+  let totalInputTokens = 0;
+  let totalOutputTokens = 0;
 
   const episodeContext =
     options?.title || options?.description || options?.feedDescription
@@ -147,9 +149,17 @@ export async function postProcess(
       : "";
 
   const chunks = chunkSegments(segments);
-  const allParagraphs: ProcessedParagraph[] = [];
+  // Results array indexed by chunk position to preserve ordering
+  const chunkResults: ProcessedParagraph[][] = new Array(chunks.length);
 
-  for (let ci = 0; ci < chunks.length; ci++) {
+  const speakerRules = hasSpeakers
+    ? `
+- Each paragraph MUST have a "speaker" field with the speaker label (e.g. "SPEAKER_00")
+- NEVER combine text from different speakers into one paragraph — a speaker change always means a new paragraph
+- Preserve the speaker label exactly as given`
+    : "";
+
+  async function processChunk(ci: number): Promise<void> {
     const chunk = chunks[ci];
     console.log(
       `[postprocess] Cleaning chunk ${ci + 1}/${chunks.length} (${chunk.length} segments)`,
@@ -157,20 +167,13 @@ export async function postProcess(
     const chunkText = chunk
       .map((s) => {
         const prefix = s.speaker ? ` [${s.speaker}]` : "";
-        return `[${formatTime(s.start)} - ${formatTime(s.end)}]${prefix} ${s.text}`;
+        return `[${s.start.toFixed(1)}s - ${s.end.toFixed(1)}s]${prefix} ${s.text}`;
       })
       .join("\n");
 
-    const speakerRules = hasSpeakers
-      ? `
-- Each paragraph MUST have a "speaker" field with the speaker label (e.g. "SPEAKER_00")
-- NEVER combine text from different speakers into one paragraph — a speaker change always means a new paragraph
-- Preserve the speaker label exactly as given`
-      : "";
-
     const response = await client.messages.create({
       model: MODEL,
-      max_tokens: 4096,
+      max_tokens: 8192,
       output_config: {
         format: {
           type: "json_schema",
@@ -180,15 +183,15 @@ export async function postProcess(
       messages: [
         {
           role: "user",
-          content: `You are processing a podcast transcript. Clean up this transcript chunk and group it into natural paragraphs.
+          content: `You are processing a podcast transcript. Clean up this transcript chunk and group it into natural paragraphs, aiming for a good reading experience.
 ${episodeContext}
 For each paragraph, provide the start and end timestamps (in seconds) and the cleaned text.
 
 Rules:
 - Remove filler words (um, uh, like, you know) unless they add meaning
 - Fix obvious speech recognition errors
-- Group related sentences into paragraphs (3-6 sentences each)
-- Preserve the speaker's meaning and tone
+- Preserve the speaker's meaning and tone, using their words where possible
+- Group related sentences into paragraphs (2-5 sentences each)
 - Keep timestamps accurate${speakerRules}
 
 Transcript chunk:
@@ -197,45 +200,57 @@ ${chunkText}`,
       ],
     });
 
+    totalInputTokens += response.usage?.input_tokens ?? 0;
+    totalOutputTokens += response.usage?.output_tokens ?? 0;
     console.log(
       `[${new Date().toISOString()}] [postprocess] Chunk ${ci + 1}/${chunks.length} done (${response.usage?.input_tokens}in/${response.usage?.output_tokens}out tokens)`,
     );
-
-    let chunkParagraphs: ProcessedParagraph[] = [];
 
     if (response.stop_reason === "end_turn") {
       const content = response.content[0];
       if (content.type === "text") {
         const parsed = JSON.parse(content.text);
-        chunkParagraphs = parsed.paragraphs;
+        chunkResults[ci] = parsed.paragraphs;
       }
     } else {
       console.warn(
         `[postprocess] Chunk ${ci + 1} stop_reason=${response.stop_reason}, using raw text`,
       );
-      if (chunk.length > 0) {
-        chunkParagraphs = [
-          {
-            start: chunk[0].start,
-            end: chunk[chunk.length - 1].end,
-            text: chunk.map((s) => s.text).join(" "),
-          },
-        ];
-      }
-    }
-
-    allParagraphs.push(...chunkParagraphs);
-
-    if (progress) {
-      await progress.onChunkDone(allParagraphs, ci, chunks.length);
+      chunkResults[ci] =
+        chunk.length > 0
+          ? [
+              {
+                start: chunk[0].start,
+                end: chunk[chunk.length - 1].end,
+                text: chunk.map((s) => s.text).join(" "),
+              },
+            ]
+          : [];
     }
   }
+
+  // Process chunks in parallel batches
+  for (let batchStart = 0; batchStart < chunks.length; batchStart += BATCH_SIZE) {
+    const batchEnd = Math.min(batchStart + BATCH_SIZE, chunks.length);
+    const batch = Array.from({ length: batchEnd - batchStart }, (_, i) => batchStart + i);
+    console.log(
+      `[postprocess] Processing batch: chunks ${batchStart + 1}-${batchEnd} of ${chunks.length}`,
+    );
+    await Promise.all(batch.map(processChunk));
+
+    if (progress) {
+      const allSoFar = chunkResults.slice(0, batchEnd).flat();
+      await progress.onChunkDone(allSoFar, batchEnd - 1, chunks.length);
+    }
+  }
+
+  const allParagraphs = chunkResults.flat();
 
   // Generate summary and chapters
   const fullText = allParagraphs
     .map((p) => {
       const prefix = p.speaker ? `[${p.speaker}] ` : "";
-      return `${prefix}${formatTime(p.start)} - ${formatTime(p.end)}: ${p.text}`;
+      return `${prefix}${p.start.toFixed(1)}s - ${p.end.toFixed(1)}s: ${p.text}`;
     })
     .join("\n\n");
 
@@ -286,6 +301,8 @@ If you cannot determine a name, use the raw label (e.g. "SPEAKER_00").`
   let chapters: Chapter[] = [];
   let speakerNames: string[] = [];
 
+  totalInputTokens += summaryResponse.usage?.input_tokens ?? 0;
+  totalOutputTokens += summaryResponse.usage?.output_tokens ?? 0;
   console.log(
     `[postprocess] Summary done (${summaryResponse.usage?.input_tokens}in/${summaryResponse.usage?.output_tokens}out tokens)`,
   );
@@ -308,11 +325,7 @@ If you cannot determine a name, use the raw label (e.g. "SPEAKER_00").`
     await progress.onSummaryDone(summary, chapters, speakerNames);
   }
 
-  return { paragraphs: allParagraphs, summary, chapters, speakerNames };
-}
+  console.log(`[postprocess] Total tokens: ${totalInputTokens} input, ${totalOutputTokens} output`);
 
-function formatTime(seconds: number): string {
-  const m = Math.floor(seconds / 60);
-  const s = Math.floor(seconds % 60);
-  return `${m}:${s.toString().padStart(2, "0")}`;
+  return { paragraphs: allParagraphs, summary, chapters, speakerNames };
 }

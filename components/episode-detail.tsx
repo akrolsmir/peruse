@@ -16,14 +16,6 @@ interface Chapter {
   timestamp: number;
 }
 
-function formatTimestamp(seconds: number): string {
-  const h = Math.floor(seconds / 3600);
-  const m = Math.floor((seconds % 3600) / 60);
-  const s = Math.floor(seconds % 60);
-  if (h > 0) return `${h}:${m.toString().padStart(2, "0")}:${s.toString().padStart(2, "0")}`;
-  return `${m}:${s.toString().padStart(2, "0")}`;
-}
-
 export function EpisodeDetail({ slug }: { slug: string }) {
   const episode = useQuery(api.episodes.getBySlug, { slug });
   const feed = useQuery(api.feeds.getById, episode?.feedId ? { id: episode.feedId } : "skip");
@@ -131,11 +123,9 @@ export function EpisodeDetail({ slug }: { slug: string }) {
             <span className="h-2.5 w-2.5 animate-pulse rounded-full bg-amber-500" />
           </div>
           <p className="text-sm font-medium text-zinc-700 dark:text-zinc-300">
-            Processing your episode
+            Transcribing your episode
           </p>
-          <p className="mt-1 text-xs text-zinc-400">
-            This page will update automatically as results come in.
-          </p>
+          <p className="mt-1 text-xs text-zinc-400">This usually takes 1-2 minutes.</p>
         </div>
       )}
 

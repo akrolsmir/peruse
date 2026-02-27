@@ -1,6 +1,7 @@
 "use client";
 
 import { useRef, useState, useEffect, useCallback, forwardRef, useImperativeHandle } from "react";
+import { formatTimestamp } from "@/lib/format";
 
 export interface AudioPlayerHandle {
   seekTo: (time: number) => void;
@@ -145,15 +146,6 @@ export const AudioPlayer = forwardRef<AudioPlayerHandle, AudioPlayerProps>(funct
     setShowSpeedMenu(false);
   };
 
-  const formatTime = (s: number) => {
-    if (!isFinite(s)) return "0:00";
-    const h = Math.floor(s / 3600);
-    const m = Math.floor((s % 3600) / 60);
-    const sec = Math.floor(s % 60);
-    if (h > 0) return `${h}:${m.toString().padStart(2, "0")}:${sec.toString().padStart(2, "0")}`;
-    return `${m}:${sec.toString().padStart(2, "0")}`;
-  };
-
   const formatRate = (rate: number) => {
     return rate % 1 === 0 ? `${rate}.0x` : `${rate}x`;
   };
@@ -256,9 +248,9 @@ export const AudioPlayer = forwardRef<AudioPlayerHandle, AudioPlayerProps>(funct
         </div>
 
         <span className="flex h-8 items-center font-mono text-xs tabular-nums text-zinc-400 ml-2 md:ml-3 md:h-9 md:text-sm">
-          {formatTime(currentTime)}
+          {formatTimestamp(currentTime)}
           <span className="mx-1.5 text-zinc-300 dark:text-zinc-600">/</span>
-          {formatTime(duration)}
+          {formatTimestamp(duration)}
         </span>
       </div>
     </div>
