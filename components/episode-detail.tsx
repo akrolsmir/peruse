@@ -1,8 +1,8 @@
 "use client";
 
-import { useQuery } from "convex/react";
+import { useQuery, useMutation } from "convex/react";
 import { api } from "@/convex/_generated/api";
-import { useRef, useState } from "react";
+import { useRef, useState, useCallback } from "react";
 import { AudioPlayer, type AudioPlayerHandle } from "@/components/audio-player";
 import { TranscriptView } from "@/components/transcript-view";
 import { RawTranscriptView } from "@/components/raw-transcript-view";
@@ -19,9 +19,21 @@ interface Chapter {
 export function EpisodeDetail({ slug }: { slug: string }) {
   const episode = useQuery(api.episodes.getBySlug, { slug });
   const feed = useQuery(api.feeds.getById, episode?.feedId ? { id: episode.feedId } : "skip");
+  const updateEpisode = useMutation(api.episodes.update);
   const playerRef = useRef<AudioPlayerHandle>(null);
   const [currentTime, setCurrentTime] = useState(0);
   const [viewMode, setViewMode] = useState<"cleaned" | "both" | "raw" | "json">("cleaned");
+
+  const handleSpeakerNameChange = useCallback(
+    (index: number, name: string) => {
+      if (!episode) return;
+      const names = [...(episode.speakerNames ?? [])];
+      while (names.length <= index) names.push(`SPEAKER_${String(names.length).padStart(2, "0")}`);
+      names[index] = name;
+      updateEpisode({ id: episode._id, speakerNames: names });
+    },
+    [episode, updateEpisode],
+  );
 
   if (episode === undefined) {
     return (
@@ -233,6 +245,7 @@ export function EpisodeDetail({ slug }: { slug: string }) {
                     speakerNames={speakerNames}
                     currentTime={currentTime}
                     onSeek={handleSeek}
+                    onSpeakerNameChange={handleSpeakerNameChange}
                   />
                 ) : hasRaw ? (
                   <RawTranscriptView
