@@ -91,6 +91,16 @@ Soon
   - could add clarifications eg "SWE (Software Engineer)" in parenthesis, augment eg "Holden [Karnofsky]" in brackets.
   - Could link to jargon
 
+## Quick numbers/math
+
+- 1 word = 1.3 tokens (or, 4 words = 3 tokens)
+- People speak at 150 words/min (or 200 tok/min)
+- Sonnet 4.6 averages 50 tokens/sec output
+  - (This is 15x faster than human speech)
+- Sonnet costs $15/mtok output or 5c/min while running
+- Our pipeline maybe about 5x more tokens input, 1.3x more tokens output?
+  - (eg 15k in/4k out for a 15min=3k tok interview)
+
 ## Notes
 
 Example URL: https://api.substack.com/feed/podcast/187852154/cecdbe38125e2786cbfebe31dd083d4f.mp3 (dwarkesh podcast w/ dario, 2h)
