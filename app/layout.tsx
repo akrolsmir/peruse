@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono, STIX_Two_Text } from "next/font/google";
+import { Geist, Geist_Mono, STIX_Two_Text, Quicksand, Exo, Outfit } from "next/font/google";
 import { ConvexClientProvider } from "@/components/convex-provider";
+import { FontProvider } from "@/components/font-provider";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -18,9 +19,24 @@ const stixTwo = STIX_Two_Text({
   subsets: ["latin"],
 });
 
+const quicksand = Quicksand({
+  variable: "--font-quicksand",
+  subsets: ["latin"],
+});
+
+const exo = Exo({
+  variable: "--font-exo",
+  subsets: ["latin"],
+});
+
+const outfit = Outfit({
+  variable: "--font-outfit",
+  subsets: ["latin"],
+});
+
 export const metadata: Metadata = {
-  title: "Peruse — Podcast Transcripts Worth Reading",
-  description: "Convert podcast episodes into high-quality transcripts worth reading carefully",
+  title: "peruse — podcast transcripts worth reading",
+  description: "Convert podcast episodes into high-quality transcripts",
 };
 
 export default function RootLayout({
@@ -31,9 +47,11 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body
-        className={`${geistSans.variable} ${geistMono.variable} ${stixTwo.variable} antialiased`}
+        className={`${geistSans.variable} ${geistMono.variable} ${stixTwo.variable} ${quicksand.variable} ${exo.variable} ${outfit.variable} antialiased`}
       >
-        <ConvexClientProvider>{children}</ConvexClientProvider>
+        <FontProvider>
+          <ConvexClientProvider>{children}</ConvexClientProvider>
+        </FontProvider>
       </body>
     </html>
   );
