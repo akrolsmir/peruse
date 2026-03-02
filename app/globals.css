@@ -25,3 +25,11 @@ body {
   color: var(--foreground);
   font-family: var(--font-outfit), system-ui, sans-serif;
 }
+
+.scrollbar-none {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.scrollbar-none::-webkit-scrollbar {
+  display: none;
+}

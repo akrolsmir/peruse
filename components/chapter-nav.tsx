@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 interface Chapter {
   title: string;
@@ -14,6 +14,8 @@ interface ChapterNavProps {
 
 export function ChapterNav({ chapters, onSeek }: ChapterNavProps) {
   const [activeIndex, setActiveIndex] = useState(0);
+  const listRef = useRef<HTMLUListElement>(null);
+  const itemRefs = useRef<(HTMLLIElement | null)[]>([]);
 
   useEffect(() => {
     const elements = chapters.map((_, i) => document.getElementById(`chapter-${i}`));
@@ -21,7 +23,6 @@ export function ChapterNav({ chapters, onSeek }: ChapterNavProps) {
 
     const observer = new IntersectionObserver(
       (entries) => {
-        // Find the topmost visible chapter heading
         const visible = entries
           .filter((e) => e.isIntersecting)
           .sort((a, b) => a.boundingClientRect.top - b.boundingClientRect.top);
@@ -41,6 +42,14 @@ export function ChapterNav({ chapters, onSeek }: ChapterNavProps) {
     return () => observer.disconnect();
   }, [chapters]);
 
+  // Auto-scroll active chapter into view within the sidebar
+  useEffect(() => {
+    const item = itemRefs.current[activeIndex];
+    if (item && listRef.current) {
+      item.scrollIntoView({ behavior: "smooth", block: "nearest" });
+    }
+  }, [activeIndex]);
+
   const handleClick = (index: number, timestamp: number) => {
     const el = document.getElementById(`chapter-${index}`);
     if (el) {
@@ -51,31 +60,31 @@ export function ChapterNav({ chapters, onSeek }: ChapterNavProps) {
 
   return (
     <nav className="hidden lg:block">
-      <div className="sticky top-10 border-l p-4 border-zinc-200 dark:border-zinc-800/50">
+      <div className="sticky top-10 border-l border-zinc-200 p-4 dark:border-zinc-800/50">
         <div className="text-[10px] font-semibold uppercase tracking-widest text-zinc-300 dark:text-zinc-600">
           Chapters
         </div>
-        <ul className="mt-3 space-y-0.5">
-          {chapters.map((ch, i) => (
-            <li key={i}>
-              <button
-                onClick={() => handleClick(i, ch.timestamp)}
-                className={`group flex w-full items-start gap-2 rounded-md px-2 py-1.5 text-left text-[13px] leading-snug transition-colors ${
-                  activeIndex === i
-                    ? "bg-amber-50 text-amber-800 dark:bg-amber-950/30 dark:text-amber-300"
-                    : "text-zinc-400 hover:bg-zinc-50 hover:text-zinc-600 dark:hover:bg-zinc-900/50 dark:hover:text-zinc-300"
-                }`}
-              >
-                {/* <span
-                  className={`mt-[3px] h-1 w-1 shrink-0 rounded-full transition-colors ${
-                    activeIndex === i ? "bg-amber-500" : "bg-zinc-200 dark:bg-zinc-700"
+        <div className="mt-3">
+          <ul
+            ref={listRef}
+            className="scrollbar-none max-h-[calc(100vh-12rem)] space-y-0.5 overflow-y-auto pb-4"
+          >
+            {chapters.map((ch, i) => (
+              <li key={i} ref={(el) => { itemRefs.current[i] = el; }}>
+                <button
+                  onClick={() => handleClick(i, ch.timestamp)}
+                  className={`group flex w-full items-start gap-2 rounded-md px-2 py-1.5 text-left text-[13px] leading-snug transition-colors ${
+                    activeIndex === i
+                      ? "bg-amber-50 text-amber-800 dark:bg-amber-950/30 dark:text-amber-300"
+                      : "text-zinc-400 hover:bg-zinc-50 hover:text-zinc-600 dark:hover:bg-zinc-900/50 dark:hover:text-zinc-300"
                   }`}
-                /> */}
-                <span className="flex-1">{ch.title}</span>
-              </button>
-            </li>
-          ))}
-        </ul>
+                >
+                  <span className="flex-1">{ch.title}</span>
+                </button>
+              </li>
+            ))}
+          </ul>
+        </div>
       </div>
     </nav>
   );

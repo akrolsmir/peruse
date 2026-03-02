@@ -116,7 +116,7 @@ export function EpisodeDetail({ slug }: { slug: string }) {
     <>
       {/* Chapter sidebar — positioned relative to the page, not the transcript */}
       {showChapterNav && (
-        <div className="hidden lg:block lg:fixed lg:right-[calc(50vw-32rem-8rem)] lg:top-0 lg:w-48 lg:pt-10 xl:right-[calc(50vw-32rem-10rem)] xl:w-52">
+        <div className="hidden lg:block lg:fixed lg:right-[calc(50vw-32rem-10rem)] lg:top-0 lg:w-60 lg:pt-10 xl:right-[calc(50vw-32rem-12rem)] xl:w-64">
           <ChapterNav chapters={chapters} onSeek={handleSeek} />
         </div>
       )}
