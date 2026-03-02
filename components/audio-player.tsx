@@ -104,15 +104,13 @@ export const AudioPlayer = forwardRef<AudioPlayerHandle, AudioPlayerProps>(funct
       const tag = (e.target as HTMLElement).tagName;
       if (tag === "INPUT" || tag === "TEXTAREA" || (e.target as HTMLElement).isContentEditable) return;
 
-      if (e.code === "Space") {
+      if (e.code === "Space" || e.code === "ArrowLeft" || e.code === "ArrowRight") {
         e.preventDefault();
-        togglePlayRef.current();
-      } else if (e.code === "ArrowLeft") {
-        e.preventDefault();
-        stepSpeedRef.current(-1);
-      } else if (e.code === "ArrowRight") {
-        e.preventDefault();
-        stepSpeedRef.current(1);
+        e.stopPropagation();
+        if (document.activeElement instanceof HTMLElement) document.activeElement.blur();
+        if (e.code === "Space") togglePlayRef.current();
+        else if (e.code === "ArrowLeft") stepSpeedRef.current(-1);
+        else stepSpeedRef.current(1);
       }
     };
     document.addEventListener("keydown", handleKeyDown);
