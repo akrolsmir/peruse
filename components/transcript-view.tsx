@@ -126,6 +126,28 @@ export function TranscriptView({
   onSeek,
   onSpeakerNameChange,
 }: TranscriptViewProps) {
+  const prevActiveRef = useRef<number | null>(null);
+
+  // Find the currently active paragraph index
+  const activeIdx = paragraphs.findIndex(
+    (p) => currentTime >= p.start && currentTime < p.end,
+  );
+
+  // Auto-scroll when active paragraph changes
+  useEffect(() => {
+    if (activeIdx >= 0 && activeIdx !== prevActiveRef.current) {
+      prevActiveRef.current = activeIdx;
+      const el = document.getElementById(`p-${activeIdx}`);
+      if (el) {
+        const rect = el.getBoundingClientRect();
+        const inView = rect.top >= 0 && rect.bottom <= window.innerHeight - 80;
+        if (!inView) {
+          el.scrollIntoView({ behavior: "smooth", block: "center" });
+        }
+      }
+    }
+  }, [activeIdx]);
+
   // Build a map of paragraph index → chapter to insert before it
   const chapterInsertions = new Map<number, Chapter>();
   if (chapters && chapters.length > 0) {
