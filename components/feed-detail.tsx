@@ -168,6 +168,7 @@ export function FeedDetail({ slug }: { slug: string }) {
               if (ep.title) transcribeParams.set("title", ep.title);
               if (ep.audioUrl) transcribeParams.set("url", ep.audioUrl);
               if (ep.description) transcribeParams.set("description", ep.description);
+              if (ep.pubDate) transcribeParams.set("pubDate", String(new Date(ep.pubDate).getTime()));
               transcribeParams.set("feedId", feed._id);
 
               return (

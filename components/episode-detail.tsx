@@ -11,6 +11,7 @@ import { ChapterNav } from "@/components/chapter-nav";
 import { StatusBadge } from "@/components/status-badge";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
+import { generateTranscriptMarkdown } from "@/lib/transcript-markdown";
 
 interface Chapter {
   title: string;
@@ -26,6 +27,7 @@ export function EpisodeDetail({ slug }: { slug: string }) {
   const [currentTime, setCurrentTime] = useState(0);
   const [viewMode, setViewMode] = useState<"cleaned" | "both" | "raw" | "json">("cleaned");
   const [highlightedParagraph, setHighlightedParagraph] = useState<number | null>(null);
+  const [copied, setCopied] = useState(false);
   const didScrollToTime = useRef(false);
 
   const handleSpeakerNameChange = useCallback(
@@ -157,7 +159,7 @@ export function EpisodeDetail({ slug }: { slug: string }) {
           {episode.title}
         </h1>
         <time className="mt-2 block text-sm text-zinc-400">
-          {new Date(episode.createdAt).toLocaleDateString("en-US", {
+          {new Date(episode.pubDate ?? episode.createdAt).toLocaleDateString("en-US", {
             weekday: "long",
             month: "long",
             day: "numeric",
@@ -226,23 +228,65 @@ export function EpisodeDetail({ slug }: { slug: string }) {
                     </span>
                   )}
                 </h2>
-                {hasRaw && paragraphs.length > 0 && (
-                  <div className="flex rounded-lg border border-zinc-200 p-0.5 dark:border-zinc-800">
-                    {(["cleaned", "both", "raw", "json"] as const).map((mode) => (
+                <div className="flex items-center gap-2">
+                  {hasRaw && paragraphs.length > 0 && (
+                    <div className="flex rounded-lg border border-zinc-200 p-0.5 dark:border-zinc-800">
+                      {(["cleaned", "both", "raw", "json"] as const).map((mode) => (
+                        <button
+                          key={mode}
+                          onClick={() => setViewMode(mode)}
+                          className={`rounded-md px-2.5 py-1 text-xs font-medium capitalize transition-colors ${
+                            viewMode === mode
+                              ? "bg-zinc-100 text-zinc-900 dark:bg-zinc-800 dark:text-zinc-100"
+                              : "text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300"
+                          }`}
+                        >
+                          {mode === "json" ? "JSON" : mode}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                  {paragraphs.length > 0 && (
+                    <div className="relative">
                       <button
-                        key={mode}
-                        onClick={() => setViewMode(mode)}
-                        className={`rounded-md px-2.5 py-1 text-xs font-medium capitalize transition-colors ${
-                          viewMode === mode
-                            ? "bg-zinc-100 text-zinc-900 dark:bg-zinc-800 dark:text-zinc-100"
-                            : "text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300"
-                        }`}
+                        onClick={() => {
+                          const md = generateTranscriptMarkdown({
+                            title: episode.title,
+                            slug,
+                            date: episode.pubDate ?? episode.createdAt,
+                            podcastName: feed?.title,
+                            summary: episode.summary,
+                            chapters,
+                            paragraphs,
+                            speakerNames,
+                          });
+                          navigator.clipboard.writeText(md);
+                          setCopied(true);
+                          setTimeout(() => setCopied(false), 2000);
+                        }}
+                        className="inline-flex items-center gap-1.5 rounded-md px-2 py-1.5 text-xs text-zinc-400 transition-colors hover:bg-zinc-100 hover:text-zinc-600 dark:hover:bg-zinc-800 dark:hover:text-zinc-300"
+                        title="Copy as Markdown"
                       >
-                        {mode === "json" ? "JSON" : mode}
+                        {copied ? (
+                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-green-500">
+                            <path d="M20 6 9 17l-5-5" />
+                          </svg>
+                        ) : (
+                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <rect width="14" height="14" x="8" y="8" rx="2" ry="2" />
+                            <path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2" />
+                          </svg>
+                        )}
+                        Copy
                       </button>
-                    ))}
-                  </div>
-                )}
+                      {copied && (
+                        <div className="absolute right-0 top-full mt-1.5 whitespace-nowrap rounded-md border border-zinc-200 bg-white px-2.5 py-1.5 text-xs font-medium text-zinc-700 shadow-sm dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-300">
+                          Copied as Markdown
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
               </div>
 
               <div>

@@ -80,6 +80,7 @@ export const create = mutation({
     storageId: v.optional(v.id("_storage")),
     description: v.optional(v.string()),
     feedId: v.optional(v.id("feeds")),
+    pubDate: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
     let url = args.url ?? "";
@@ -103,6 +104,7 @@ export const create = mutation({
       ...(audioUrl ? { audioUrl } : {}),
       ...(args.description ? { description: args.description } : {}),
       ...(args.feedId ? { feedId: args.feedId } : {}),
+      pubDate: args.pubDate ?? Date.now(),
     });
     return { id, slug, audioUrl };
   },
@@ -145,6 +147,7 @@ export const clone = mutation({
       slug,
       status: "processing",
       rawTranscript: episode.rawTranscript,
+      pubDate: episode.pubDate,
       createdAt: Date.now(),
     });
     return { id: newId, slug };

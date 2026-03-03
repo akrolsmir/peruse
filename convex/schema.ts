@@ -23,6 +23,7 @@ export default defineSchema({
     speakerNames: v.optional(v.array(v.string())),
     description: v.optional(v.string()),
     feedId: v.optional(v.id("feeds")),
+    pubDate: v.optional(v.number()),
     createdAt: v.number(),
   })
     .index("by_slug", ["slug"])
