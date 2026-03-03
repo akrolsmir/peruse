@@ -58,7 +58,7 @@ Soon
 - episode page:
   - [x] show titles as headers
   - [x] shorter slugify (no cruft at end)
-  - export entire script to markdown
+  - [x] export entire script to markdown
   - [x] tap to change speaker description
     - (maybe more ways to edit things in general)
     - big brain: speak directly with ai to change things!!
@@ -69,14 +69,15 @@ Soon
   - dropped transcript before "passion capital wins" on /social-radars-with-tom-3-speakers-align-output-mlx23ryw
   - [x] fix the timestamps so they're consistent (no jumping)
 - code smells:
-  - feeds should probably load 1mb of data; make a subtable instead?
+  - [x] feeds should probably load 1mb of data; make a subtable instead?
   - consolidate prompts
-  - consolidate formatTimestamps (?)
+  - [x] consolidate formatTimestamps (?)
 - style things
-  - pick a better sans-serif pairing
+  - [x] pick a better sans-serif pairing
   - og image, use feed images?
   - colors for speakers
-  - dark mode? next level: custom theming based on image/banner?
+  - [x] dark mode?
+  - next level: custom theming based on image/banner?
 - longterm:
   - Search interface over popular podcasts (eg via listennotes api? or start with a few RSS feeds?)
   - Suggest fixes (to implement via claude code?)

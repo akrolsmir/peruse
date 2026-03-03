@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono, STIX_Two_Text, Quicksand, Exo, Outfit } from "next/font/google";
 import { ConvexClientProvider } from "@/components/convex-provider";
 import { FontProvider } from "@/components/font-provider";
+import { ThemeProvider } from "next-themes";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -45,13 +46,15 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
       <body
         className={`${geistSans.variable} ${geistMono.variable} ${stixTwo.variable} ${quicksand.variable} ${exo.variable} ${outfit.variable} antialiased`}
       >
-        <FontProvider>
-          <ConvexClientProvider>{children}</ConvexClientProvider>
-        </FontProvider>
+        <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
+          <FontProvider>
+            <ConvexClientProvider>{children}</ConvexClientProvider>
+          </FontProvider>
+        </ThemeProvider>
       </body>
     </html>
   );
