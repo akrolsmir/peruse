@@ -34,10 +34,20 @@ export default defineSchema({
     description: v.optional(v.string()),
     imageUrl: v.optional(v.string()),
     slug: v.string(),
-    episodes: v.string(), // JSON string of FeedEpisode[]
+    episodeCount: v.number(),
     lastFetchedAt: v.number(),
     createdAt: v.number(),
   })
     .index("by_slug", ["slug"])
     .index("by_feedUrl", ["feedUrl"]),
+
+  feedItems: defineTable({
+    feedId: v.id("feeds"),
+    guid: v.string(),
+    title: v.string(),
+    description: v.string(),
+    audioUrl: v.string(),
+    pubDate: v.string(),
+    duration: v.string(),
+  }).index("by_feedId", ["feedId"]),
 });

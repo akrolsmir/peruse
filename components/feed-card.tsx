@@ -4,13 +4,13 @@ interface Feed {
   _id: string;
   title: string;
   slug: string;
-  episodes: string;
+  episodeCount: number;
   lastFetchedAt: number;
   imageUrl?: string;
 }
 
 export function FeedCard({ feed }: { feed: Feed }) {
-  const episodeCount = JSON.parse(feed.episodes).length;
+  const episodeCount = feed.episodeCount;
   const lastFetched = new Date(feed.lastFetchedAt).toLocaleDateString("en-US", {
     month: "short",
     day: "numeric",

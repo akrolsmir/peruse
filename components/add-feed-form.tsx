@@ -47,7 +47,7 @@ export function AddFeedForm() {
         title: feed.title,
         description: feed.description || undefined,
         imageUrl: feed.imageUrl || undefined,
-        episodes: JSON.stringify(feed.episodes),
+        episodes: feed.episodes,
       });
       const { slug } = result as { slug: string };
 

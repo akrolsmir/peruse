@@ -7,15 +7,6 @@ import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
 import { EpisodeCard } from "@/components/episode-card";
 
-interface FeedEpisode {
-  guid: string;
-  title: string;
-  description: string;
-  audioUrl: string;
-  pubDate: string;
-  duration: string;
-}
-
 function formatDuration(raw: string): string {
   if (!raw) return "";
   // Already in h:mm:ss or mm:ss format
@@ -38,11 +29,15 @@ function formatDuration(raw: string): string {
 
 export function FeedDetail({ slug }: { slug: string }) {
   const feed = useQuery(api.feeds.getBySlug, { slug });
+  const feedItems = useQuery(
+    api.feeds.listItems,
+    feed?._id ? { feedId: feed._id } : "skip",
+  );
   const transcribedEpisodes = useQuery(
     api.episodes.listByFeed,
     feed?._id ? { feedId: feed._id } : "skip",
   );
-  const updateEpisodes = useMutation(api.feeds.updateEpisodes);
+  const refreshItems = useMutation(api.feeds.refreshItems);
   const [refreshing, setRefreshing] = useState(false);
 
   if (feed === undefined) {
@@ -62,7 +57,6 @@ export function FeedDetail({ slug }: { slug: string }) {
     );
   }
 
-  const episodes: FeedEpisode[] = JSON.parse(feed.episodes);
   const daysSinceRefresh = (Date.now() - feed.lastFetchedAt) / (1000 * 60 * 60 * 24);
   const isStale = daysSinceRefresh > 7;
 
@@ -76,9 +70,9 @@ export function FeedDetail({ slug }: { slug: string }) {
       });
       if (!res.ok) throw new Error("Failed to refresh feed");
       const data = await res.json();
-      await updateEpisodes({
+      await refreshItems({
         id: feed._id as Id<"feeds">,
-        episodes: JSON.stringify(data.episodes),
+        episodes: data.episodes,
       });
     } catch {
       // Silently fail — user can try again
@@ -86,6 +80,8 @@ export function FeedDetail({ slug }: { slug: string }) {
       setRefreshing(false);
     }
   };
+
+  const episodes = feedItems ?? [];
 
   return (
     <div>
@@ -121,7 +117,7 @@ export function FeedDetail({ slug }: { slug: string }) {
       {/* Actions */}
       <div className="mb-6 flex items-center justify-between">
         <h2 className="text-xs font-semibold uppercase tracking-widest text-zinc-400">
-          {episodes.length} episode{episodes.length !== 1 ? "s" : ""}
+          {feed.episodeCount} episode{feed.episodeCount !== 1 ? "s" : ""}
         </h2>
         <button
           onClick={handleRefresh}
@@ -176,7 +172,7 @@ export function FeedDetail({ slug }: { slug: string }) {
 
               return (
                 <div
-                  key={ep.guid}
+                  key={ep._id}
                   className="flex items-center gap-3 py-2.5 transition-colors hover:bg-zinc-50/60 dark:hover:bg-zinc-900/40"
                 >
                   <h3 className="min-w-0 flex-1 truncate text-sm text-zinc-800 dark:text-zinc-200">
