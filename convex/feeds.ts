@@ -7,6 +7,7 @@ const feedEpisodeValidator = v.object({
   title: v.string(),
   description: v.string(),
   audioUrl: v.string(),
+  imageUrl: v.optional(v.string()),
   pubDate: v.string(),
   duration: v.string(),
 });
@@ -109,6 +110,7 @@ export const refreshItems = mutation({
           title: ep.title,
           description: ep.description,
           audioUrl: ep.audioUrl,
+          imageUrl: ep.imageUrl,
           pubDate: ep.pubDate,
           duration: ep.duration,
         });

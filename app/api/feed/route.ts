@@ -17,6 +17,7 @@ export async function POST(request: Request) {
       title: item.title || "Untitled",
       description: item.contentSnippet || item.content || "",
       audioUrl: item.enclosure?.url || "",
+      imageUrl: item.itunes?.image || "",
       pubDate: item.pubDate || "",
       duration: item.itunes?.duration || "",
     }));

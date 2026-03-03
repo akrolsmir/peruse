@@ -45,6 +45,7 @@ export function UploadForm() {
   const [description, setDescription] = useState(searchParams.get("description") || "");
   const feedId = searchParams.get("feedId") as Id<"feeds"> | undefined;
   const pubDate = searchParams.get("pubDate") ? Number(searchParams.get("pubDate")) : undefined;
+  const imageUrl = searchParams.get("imageUrl") || undefined;
 
   const canSubmit = !loading && (sourceMode === "url" ? url.trim() !== "" : file !== null);
 
@@ -68,6 +69,7 @@ export function UploadForm() {
           description: description || undefined,
           feedId: feedId || undefined,
           pubDate: pubDate || undefined,
+          imageUrl,
         });
         const { id: episodeId, slug } = result as { id: string; slug: string };
         episodeSlug = slug;
@@ -101,6 +103,7 @@ export function UploadForm() {
           description: description || undefined,
           feedId: feedId || undefined,
           pubDate: pubDate || undefined,
+          imageUrl,
         });
         const {
           id: episodeId,
