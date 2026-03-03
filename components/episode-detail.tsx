@@ -12,6 +12,7 @@ import { StatusBadge } from "@/components/status-badge";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { generateTranscriptMarkdown } from "@/lib/transcript-markdown";
+import { micromark } from "micromark";
 
 interface Chapter {
   title: string;
@@ -260,7 +261,13 @@ export function EpisodeDetail({ slug }: { slug: string }) {
                             paragraphs,
                             speakerNames,
                           });
-                          navigator.clipboard.writeText(md);
+                          const html = micromark(md);
+                          navigator.clipboard.write([
+                            new ClipboardItem({
+                              "text/html": new Blob([html], { type: "text/html" }),
+                              "text/plain": new Blob([md], { type: "text/plain" }),
+                            }),
+                          ]);
                           setCopied(true);
                           setTimeout(() => setCopied(false), 2000);
                         }}
@@ -268,11 +275,30 @@ export function EpisodeDetail({ slug }: { slug: string }) {
                         title="Copy as Markdown"
                       >
                         {copied ? (
-                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-green-500">
+                          <svg
+                            width="14"
+                            height="14"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            strokeWidth="2"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            className="text-green-500"
+                          >
                             <path d="M20 6 9 17l-5-5" />
                           </svg>
                         ) : (
-                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <svg
+                            width="14"
+                            height="14"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            strokeWidth="2"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                          >
                             <rect width="14" height="14" x="8" y="8" rx="2" ry="2" />
                             <path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2" />
                           </svg>
@@ -281,7 +307,7 @@ export function EpisodeDetail({ slug }: { slug: string }) {
                       </button>
                       {copied && (
                         <div className="absolute right-0 top-full mt-1.5 whitespace-nowrap rounded-md border border-zinc-200 bg-white px-2.5 py-1.5 text-xs font-medium text-zinc-700 shadow-sm dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-300">
-                          Copied as Markdown
+                          Copied to clipboard
                         </div>
                       )}
                     </div>

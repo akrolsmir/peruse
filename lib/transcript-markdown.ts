@@ -46,7 +46,7 @@ export function generateTranscriptMarkdown(opts: {
     year: "numeric",
   });
   lines.push(`Published on ${dateStr}, transcribed by peruse.`);
-  lines.push(`For humans: https://peruse.sh/ep/${slug}`);
+  lines.push(`For humans: <https://peruse.sh/ep/${slug}>`);
   lines.push("");
 
   if (summary) {
