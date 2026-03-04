@@ -46,6 +46,7 @@ export function UploadForm() {
   const feedId = searchParams.get("feedId") as Id<"feeds"> | undefined;
   const pubDate = searchParams.get("pubDate") ? Number(searchParams.get("pubDate")) : undefined;
   const imageUrl = searchParams.get("imageUrl") || undefined;
+  const feedItemId = searchParams.get("feedItemId") as Id<"feedItems"> | undefined;
 
   const canSubmit = !loading && (sourceMode === "url" ? url.trim() !== "" : file !== null);
 
@@ -68,6 +69,7 @@ export function UploadForm() {
           url: url.trim(),
           description: description || undefined,
           feedId: feedId || undefined,
+          feedItemId: feedItemId || undefined,
           pubDate: pubDate || undefined,
           imageUrl,
         });
@@ -102,6 +104,7 @@ export function UploadForm() {
           storageId,
           description: description || undefined,
           feedId: feedId || undefined,
+          feedItemId: feedItemId || undefined,
           pubDate: pubDate || undefined,
           imageUrl,
         });

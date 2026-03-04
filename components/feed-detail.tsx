@@ -81,7 +81,9 @@ export function FeedDetail({ slug }: { slug: string }) {
     }
   };
 
-  const episodes = feedItems ?? [];
+  const episodes = [...(feedItems ?? [])].sort(
+    (a, b) => new Date(b.pubDate).getTime() - new Date(a.pubDate).getTime(),
+  );
 
   return (
     <div>
@@ -171,6 +173,7 @@ export function FeedDetail({ slug }: { slug: string }) {
               const epImageUrl = ep.imageUrl || feed.imageUrl;
               if (epImageUrl) transcribeParams.set("imageUrl", epImageUrl);
               if (ep.pubDate) transcribeParams.set("pubDate", String(new Date(ep.pubDate).getTime()));
+              transcribeParams.set("feedItemId", ep._id);
               transcribeParams.set("feedId", feed._id);
 
               return (
