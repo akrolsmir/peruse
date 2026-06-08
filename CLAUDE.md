@@ -47,3 +47,6 @@ Required in `.env.local`:
 - `NEXT_PUBLIC_CONVEX_URL` — Convex frontend URL (public)
 - `CONVEX_DEPLOYMENT` — Convex deployment identifier
 - `HUGGINGFACE_API_KEY` — needed for WhisperX diarization
+- `YOUTUBE_API_KEY` — YouTube Data API v3 key for fetching video metadata (Next.js route only)
+- `RAPIDAPI_KEY` — RapidAPI key for the YouTube audio provider that resolves YouTube audio (synced to Convex)
+- `RAPIDAPI_YT_HOST` — optional override for the provider host (default `ytstream-download-youtube-videos.p.rapidapi.com`)

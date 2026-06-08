@@ -2,7 +2,15 @@
 
 // Reads API keys from .env.local (auto-loaded by Bun) and sets them as Convex environment variables.
 
-const ENV_KEYS = ["REPLICATE_API_TOKEN", "ANTHROPIC_API_KEY", "HUGGINGFACE_API_KEY"];
+// RAPIDAPI_* power the youtube-to-mp3 audio resolution, which runs in a Convex action.
+// (YOUTUBE_API_KEY is only used by the Next.js route, so it stays out of Convex.)
+const ENV_KEYS = [
+  "REPLICATE_API_TOKEN",
+  "ANTHROPIC_API_KEY",
+  "HUGGINGFACE_API_KEY",
+  "RAPIDAPI_KEY",
+  "RAPIDAPI_YT_HOST",
+];
 
 for (const key of ENV_KEYS) {
   const value = process.env[key];

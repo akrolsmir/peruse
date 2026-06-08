@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useMutation } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import type { ASRModel } from "@/lib/transcribe";
+import { isYoutubeUrl } from "@/lib/youtube";
 import type { Id } from "@/convex/_generated/dataModel";
 
 const models: { value: ASRModel; label: string; description: string }[] = [
@@ -25,7 +26,7 @@ const models: { value: ASRModel; label: string; description: string }[] = [
   },
 ];
 
-type SourceMode = "url" | "file";
+type SourceMode = "url" | "file" | "youtube";
 
 export function UploadForm() {
   const router = useRouter();
@@ -35,6 +36,9 @@ export function UploadForm() {
   const generateUploadUrl = useMutation(api.episodes.generateUploadUrl);
   const [sourceMode, setSourceMode] = useState<SourceMode>("url");
   const [url, setUrl] = useState(searchParams.get("url") || "");
+  const [youtubeUrl, setYoutubeUrl] = useState("");
+  const [ytLoading, setYtLoading] = useState(false);
+  const [ytError, setYtError] = useState("");
   const [file, setFile] = useState<File | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [title, setTitle] = useState(searchParams.get("title") || "");
@@ -43,12 +47,44 @@ export function UploadForm() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [description, setDescription] = useState(searchParams.get("description") || "");
+  const [imageUrl, setImageUrl] = useState(searchParams.get("imageUrl") || undefined);
+  const [pubDate, setPubDate] = useState(
+    searchParams.get("pubDate") ? Number(searchParams.get("pubDate")) : undefined,
+  );
   const feedId = searchParams.get("feedId") as Id<"feeds"> | undefined;
-  const pubDate = searchParams.get("pubDate") ? Number(searchParams.get("pubDate")) : undefined;
-  const imageUrl = searchParams.get("imageUrl") || undefined;
   const feedItemId = searchParams.get("feedItemId") as Id<"feedItems"> | undefined;
 
-  const canSubmit = !loading && (sourceMode === "url" ? url.trim() !== "" : file !== null);
+  // Fetch title/description/thumbnail from the YouTube Data API when a link is pasted.
+  const fetchYoutubeMetadata = async (link: string) => {
+    if (!isYoutubeUrl(link)) return;
+    setYtLoading(true);
+    setYtError("");
+    try {
+      const res = await fetch("/api/youtube", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ url: link }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Failed to fetch metadata");
+      if (data.title) setTitle(data.title);
+      if (data.description) setDescription(data.description);
+      if (data.imageUrl) setImageUrl(data.imageUrl);
+      if (data.pubDate) setPubDate(data.pubDate);
+    } catch (err) {
+      setYtError(err instanceof Error ? err.message : "Failed to fetch metadata");
+    } finally {
+      setYtLoading(false);
+    }
+  };
+
+  const canSubmit =
+    !loading &&
+    (sourceMode === "url"
+      ? url.trim() !== ""
+      : sourceMode === "youtube"
+        ? youtubeUrl.trim() !== ""
+        : file !== null);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -60,13 +96,17 @@ export function UploadForm() {
     try {
       let episodeSlug: string;
 
-      if (sourceMode === "url") {
+      if (sourceMode === "url" || sourceMode === "youtube") {
+        const source = sourceMode === "youtube" ? youtubeUrl.trim() : url.trim();
         const episodeTitle =
-          title.trim() || new URL(url).pathname.split("/").pop() || "Untitled Episode";
+          title.trim() ||
+          (sourceMode === "youtube"
+            ? "YouTube Video"
+            : new URL(url).pathname.split("/").pop() || "Untitled Episode");
 
         const result = await createEpisode({
           title: episodeTitle,
-          url: url.trim(),
+          url: source,
           description: description || undefined,
           feedId: feedId || undefined,
           feedItemId: feedItemId || undefined,
@@ -78,7 +118,7 @@ export function UploadForm() {
 
         await startProcessing({
           id: episodeId as Id<"episodes">,
-          url: url.trim(),
+          url: source,
           model,
           ...(model === "whisperx" ? { minSpeakers } : {}),
         });
@@ -177,7 +217,7 @@ export function UploadForm() {
           Audio Source
         </span>
         <div className="inline-flex rounded-lg border border-zinc-200 dark:border-zinc-800">
-          {(["url", "file"] as const).map((mode) => (
+          {(["url", "file", "youtube"] as const).map((mode) => (
             <button
               key={mode}
               type="button"
@@ -188,7 +228,7 @@ export function UploadForm() {
                   : "text-zinc-500 hover:text-zinc-700 dark:text-zinc-400 dark:hover:text-zinc-200"
               }`}
             >
-              {mode === "url" ? "URL" : "File"}
+              {mode === "url" ? "URL" : mode === "file" ? "File" : "YouTube"}
             </button>
           ))}
         </div>
@@ -210,6 +250,37 @@ export function UploadForm() {
             placeholder="https://example.com/episode.mp3"
             className="w-full rounded-xl border border-zinc-200 bg-white px-4 py-3 text-sm text-zinc-900 placeholder:text-zinc-300 transition-colors focus:border-amber-500 focus:outline-none focus:ring-1 focus:ring-amber-500/20 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-100 dark:placeholder:text-zinc-600"
           />
+        </div>
+      ) : sourceMode === "youtube" ? (
+        <div>
+          <label
+            htmlFor="youtubeUrl"
+            className="mb-2 block text-xs font-semibold uppercase tracking-widest text-zinc-400"
+          >
+            YouTube URL
+          </label>
+          <input
+            id="youtubeUrl"
+            type="url"
+            value={youtubeUrl}
+            onChange={(e) => setYoutubeUrl(e.target.value)}
+            onBlur={(e) => fetchYoutubeMetadata(e.target.value.trim())}
+            placeholder="https://www.youtube.com/watch?v=..."
+            className="w-full rounded-xl border border-zinc-200 bg-white px-4 py-3 text-sm text-zinc-900 placeholder:text-zinc-300 transition-colors focus:border-amber-500 focus:outline-none focus:ring-1 focus:ring-amber-500/20 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-100 dark:placeholder:text-zinc-600"
+          />
+          {ytLoading && <p className="mt-2 text-xs text-zinc-400">Fetching video details…</p>}
+          {ytError && <p className="mt-2 text-xs text-red-500">{ytError}</p>}
+          {!ytLoading && !ytError && imageUrl && (
+            <div className="mt-3 flex items-center gap-3">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={imageUrl}
+                alt="Video thumbnail"
+                className="h-14 w-24 rounded-lg object-cover"
+              />
+              <span className="text-xs text-zinc-400">Details fetched from YouTube</span>
+            </div>
+          )}
         </div>
       ) : (
         <div>
@@ -318,7 +389,11 @@ export function UploadForm() {
         {loading ? (
           <span className="inline-flex items-center gap-2">
             <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-white" />
-            {sourceMode === "file" ? "Uploading..." : "Processing..."}
+            {sourceMode === "file"
+              ? "Uploading..."
+              : sourceMode === "youtube"
+                ? "Fetching audio..."
+                : "Processing..."}
           </span>
         ) : (
           "Start Transcription"

@@ -4,6 +4,7 @@ import { v } from "convex/values";
 import { internalAction } from "./_generated/server";
 import { api } from "./_generated/api";
 import { validateAudioUrl } from "../lib/audio";
+import { isYoutubeUrl, resolveYoutubeAudioUrl } from "../lib/youtube";
 import { createASR, type ASRModel, type TranscriptSegment } from "../lib/transcribe";
 import { postProcess } from "../lib/postprocess";
 
@@ -24,9 +25,27 @@ export const processEpisode = internalAction({
         status: "downloading",
       });
 
-      // Skip validation for Convex storage URLs — they're already direct links
+      // Resolve the audio source. YouTube links are resolved to a direct stream
+      // URL, then downloaded and re-hosted in Convex storage (the provider links
+      // can be short-lived / IP-bound, so we hand Replicate a stable Convex URL).
+      // Convex storage URLs are already direct; everything else is validated.
       const isConvexUrl = url.includes(".convex.cloud/");
-      const audioUrl = isConvexUrl ? url : await validateAudioUrl(url);
+      let audioUrl: string;
+      if (isYoutubeUrl(url)) {
+        const streamUrl = await resolveYoutubeAudioUrl(url);
+        const res = await fetch(streamUrl);
+        if (!res.ok) {
+          throw new Error(`Failed to download YouTube audio (${res.status})`);
+        }
+        const storageId = await ctx.storage.store(await res.blob());
+        const stored = await ctx.storage.getUrl(storageId);
+        if (!stored) throw new Error("Failed to store YouTube audio");
+        audioUrl = stored;
+      } else if (isConvexUrl) {
+        audioUrl = url;
+      } else {
+        audioUrl = await validateAudioUrl(url);
+      }
       await ctx.runMutation(api.episodes.updateStatus, {
         id,
         status: "downloading",
