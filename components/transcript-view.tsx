@@ -129,9 +129,7 @@ export function TranscriptView({
   const prevActiveRef = useRef<number | null>(null);
 
   // Find the currently active paragraph index
-  const activeIdx = paragraphs.findIndex(
-    (p) => currentTime >= p.start && currentTime < p.end,
-  );
+  const activeIdx = paragraphs.findIndex((p) => currentTime >= p.start && currentTime < p.end);
 
   // Auto-scroll when active paragraph changes
   useEffect(() => {
@@ -205,9 +203,7 @@ export function TranscriptView({
                   {onSpeakerNameChange && speakerIndex(p.speaker) !== null ? (
                     <EditableSpeakerName
                       name={speaker!}
-                      onCommit={(newName) =>
-                        onSpeakerNameChange(speakerIndex(p.speaker)!, newName)
-                      }
+                      onCommit={(newName) => onSpeakerNameChange(speakerIndex(p.speaker)!, newName)}
                     />
                   ) : (
                     speaker

@@ -70,7 +70,12 @@ export function ChapterNav({ chapters, onSeek }: ChapterNavProps) {
             className="scrollbar-none max-h-[calc(100vh-12rem)] space-y-0.5 overflow-y-auto pb-4"
           >
             {chapters.map((ch, i) => (
-              <li key={i} ref={(el) => { itemRefs.current[i] = el; }}>
+              <li
+                key={i}
+                ref={(el) => {
+                  itemRefs.current[i] = el;
+                }}
+              >
                 <button
                   onClick={() => handleClick(i, ch.timestamp)}
                   className={`group flex w-full items-start gap-2 rounded-md px-2 py-1.5 text-left text-[13px] leading-snug transition-colors ${

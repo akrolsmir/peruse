@@ -58,9 +58,7 @@ export default function ThemePage() {
       <h1 className="mb-2 text-2xl font-bold tracking-tight text-zinc-900 dark:text-zinc-50">
         Theme
       </h1>
-      <p className="mb-10 text-sm text-zinc-400">
-        Customize the appearance of the app.
-      </p>
+      <p className="mb-10 text-sm text-zinc-400">Customize the appearance of the app.</p>
 
       {/* Color mode */}
       <section className="mb-12">

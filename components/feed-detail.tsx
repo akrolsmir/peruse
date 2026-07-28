@@ -29,10 +29,7 @@ function formatDuration(raw: string): string {
 
 export function FeedDetail({ slug }: { slug: string }) {
   const feed = useQuery(api.feeds.getBySlug, { slug });
-  const feedItems = useQuery(
-    api.feeds.listItems,
-    feed?._id ? { feedId: feed._id } : "skip",
-  );
+  const feedItems = useQuery(api.feeds.listItems, feed?._id ? { feedId: feed._id } : "skip");
   const transcribedEpisodes = useQuery(
     api.episodes.listByFeed,
     feed?._id ? { feedId: feed._id } : "skip",
@@ -150,9 +147,7 @@ export function FeedDetail({ slug }: { slug: string }) {
 
       {/* Episode list */}
       {(() => {
-        const transcribedTitles = new Set(
-          (transcribedEpisodes ?? []).map((ep) => ep.title),
-        );
+        const transcribedTitles = new Set((transcribedEpisodes ?? []).map((ep) => ep.title));
 
         return (
           <div className="divide-y divide-zinc-100 dark:divide-zinc-800/60">
@@ -172,7 +167,8 @@ export function FeedDetail({ slug }: { slug: string }) {
               if (ep.description) transcribeParams.set("description", ep.description);
               const epImageUrl = ep.imageUrl || feed.imageUrl;
               if (epImageUrl) transcribeParams.set("imageUrl", epImageUrl);
-              if (ep.pubDate) transcribeParams.set("pubDate", String(new Date(ep.pubDate).getTime()));
+              if (ep.pubDate)
+                transcribeParams.set("pubDate", String(new Date(ep.pubDate).getTime()));
               transcribeParams.set("feedItemId", ep._id);
               transcribeParams.set("feedId", feed._id);
 
