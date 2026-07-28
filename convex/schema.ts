@@ -16,6 +16,9 @@ export default defineSchema({
       v.literal("error"),
     ),
     error: v.optional(v.string()),
+    // Transcription params, kept so a failed run can be retried identically
+    model: v.optional(v.string()),
+    minSpeakers: v.optional(v.number()),
     rawTranscript: v.optional(v.string()),
     transcript: v.optional(v.string()),
     summary: v.optional(v.string()),

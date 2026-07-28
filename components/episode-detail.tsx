@@ -23,6 +23,9 @@ export function EpisodeDetail({ slug }: { slug: string }) {
   const episode = useQuery(api.episodes.getBySlug, { slug });
   const feed = useQuery(api.feeds.getById, episode?.feedId ? { id: episode.feedId } : "skip");
   const updateEpisode = useMutation(api.episodes.update);
+  const retryEpisode = useMutation(api.episodes.retry);
+  const [retrying, setRetrying] = useState(false);
+  const [retryError, setRetryError] = useState("");
   const playerRef = useRef<AudioPlayerHandle>(null);
   const searchParams = useSearchParams();
   const [currentTime, setCurrentTime] = useState(0);
@@ -115,6 +118,19 @@ export function EpisodeDetail({ slug }: { slug: string }) {
 
   const showChapterNav = chapters.length > 0 && (hasContent || paragraphs.length > 0);
 
+  const handleRetry = async () => {
+    if (!episode) return;
+    setRetrying(true);
+    setRetryError("");
+    try {
+      await retryEpisode({ id: episode._id });
+    } catch (err) {
+      setRetryError(err instanceof Error ? err.message : "Retry failed");
+    } finally {
+      setRetrying(false);
+    }
+  };
+
   return (
     <>
       {/* Chapter sidebar — positioned relative to the page, not the transcript */}
@@ -183,12 +199,52 @@ export function EpisodeDetail({ slug }: { slug: string }) {
       )}
 
       {/* Error state */}
-      {isError && !paragraphs.length && (
-        <div className="rounded-xl border border-red-200 bg-red-50 p-10 text-center dark:border-red-900/50 dark:bg-red-950/20">
+      {isError && (
+        <div
+          className={`rounded-xl border border-red-200 bg-red-50 text-center dark:border-red-900/50 dark:bg-red-950/20 ${
+            paragraphs.length ? "mb-10 p-6" : "p-10"
+          }`}
+        >
           <p className="text-sm font-medium text-red-700 dark:text-red-400">Processing failed</p>
           <p className="mt-1 text-xs text-red-500/70 dark:text-red-400/50">
             {episode.error || "An unexpected error occurred."}
           </p>
+          <button
+            onClick={handleRetry}
+            disabled={retrying}
+            className="mt-5 inline-flex items-center gap-2 rounded-lg bg-red-600 px-4 py-2 text-xs font-medium text-white transition-all hover:bg-red-500 active:scale-[0.98] disabled:opacity-50 disabled:active:scale-100"
+          >
+            {retrying ? (
+              <>
+                <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-white" />
+                Restarting...
+              </>
+            ) : (
+              <>
+                <svg
+                  width="13"
+                  height="13"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <path d="M3 12a9 9 0 1 0 3-6.7L3 8" />
+                  <path d="M3 3v5h5" />
+                </svg>
+                Retry transcription
+              </>
+            )}
+          </button>
+          <p className="mt-2.5 text-[11px] text-red-500/60 dark:text-red-400/40">
+            Re-runs on this page with the same audio and settings
+            {paragraphs.length > 0 && ", replacing the partial transcript below"}.
+          </p>
+          {retryError && (
+            <p className="mt-2 text-xs font-medium text-red-700 dark:text-red-400">{retryError}</p>
+          )}
         </div>
       )}
 

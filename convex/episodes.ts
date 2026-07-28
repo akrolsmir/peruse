@@ -168,11 +168,47 @@ export const startProcessing = mutation({
     minSpeakers: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
+    // Remember the params so the run can be retried exactly as-is
+    await ctx.db.patch(args.id, {
+      model: args.model,
+      minSpeakers: args.minSpeakers,
+    });
     await ctx.scheduler.runAfter(0, internal.processing.processEpisode, {
       id: args.id,
       url: args.url,
       model: args.model,
       minSpeakers: args.minSpeakers,
+    });
+  },
+});
+
+// Re-run the full pipeline on the same episode, with the same params it was
+// originally started with. Keeps the same doc (and slug), clearing stale output.
+export const retry = mutation({
+  args: { id: v.id("episodes") },
+  handler: async (ctx, args) => {
+    const episode = await ctx.db.get(args.id);
+    if (!episode) throw new Error("Episode not found");
+
+    const url = episode.url || episode.audioUrl;
+    if (!url) throw new Error("Episode has no audio URL to retry with");
+
+    await ctx.db.patch(args.id, {
+      status: "pending",
+      error: undefined,
+      rawTranscript: undefined,
+      transcript: undefined,
+      summary: undefined,
+      chapters: undefined,
+      speakerNames: undefined,
+    });
+
+    await ctx.scheduler.runAfter(0, internal.processing.processEpisode, {
+      id: args.id,
+      url,
+      // Episodes created before params were stored default to the form's defaults
+      model: episode.model ?? "whisperx",
+      minSpeakers: episode.minSpeakers ?? 2,
     });
   },
 });
