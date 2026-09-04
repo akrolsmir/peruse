@@ -44,6 +44,7 @@ export const listByFeed = query({
       title: ep.title,
       slug: ep.slug,
       status: ep.status,
+      feedItemId: ep.feedItemId,
       hasRawTranscript: !!ep.rawTranscript,
       createdAt: ep.createdAt,
     }));

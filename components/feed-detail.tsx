@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useQuery, useMutation } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
+import type { FunctionReturnType } from "convex/server";
 import { EpisodeCard } from "@/components/episode-card";
 import { fetchFeed, syncFeedItems } from "@/lib/feed";
 
@@ -27,6 +28,56 @@ function formatDuration(raw: string): string {
   const m = Math.floor((totalSec % 3600) / 60);
   return h > 0 ? `${h}h ${m}m` : `${m}m`;
 }
+
+type TranscribedEpisode = FunctionReturnType<typeof api.episodes.listByFeed>[number];
+
+const actionLinkBase =
+  "shrink-0 rounded-md px-2.5 py-1 text-xs font-medium transition-all active:scale-95";
+
+// Links an already-transcribed feed item to its episode page instead of
+// offering to transcribe it again.
+function EpisodeActionLink({ episode }: { episode: TranscribedEpisode }) {
+  const href = `/ep/${episode.slug}`;
+
+  if (episode.status === "done") {
+    return (
+      <Link
+        href={href}
+        className={`${actionLinkBase} bg-zinc-900 text-white hover:bg-zinc-700 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-300`}
+      >
+        Read
+      </Link>
+    );
+  }
+
+  if (episode.status === "error") {
+    return (
+      <Link
+        href={href}
+        className={`${actionLinkBase} border border-red-300 text-red-600 hover:bg-red-50 dark:border-red-900/60 dark:text-red-400 dark:hover:bg-red-950/30`}
+      >
+        Failed
+      </Link>
+    );
+  }
+
+  return (
+    <Link
+      href={href}
+      className={`${actionLinkBase} inline-flex items-center gap-1.5 bg-zinc-100 text-zinc-500 hover:bg-zinc-200 dark:bg-zinc-800 dark:text-zinc-400 dark:hover:bg-zinc-700`}
+    >
+      <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-current" />
+      {statusLabels[episode.status] ?? "In progress"}
+    </Link>
+  );
+}
+
+const statusLabels: Record<string, string> = {
+  pending: "Queued",
+  downloading: "Downloading",
+  transcribing: "Transcribing",
+  processing: "Processing",
+};
 
 export function FeedDetail({ slug }: { slug: string }) {
   const feed = useQuery(api.feeds.getBySlug, { slug });
@@ -163,7 +214,16 @@ export function FeedDetail({ slug }: { slug: string }) {
 
       {/* Episode list */}
       {(() => {
-        const transcribedTitles = new Set((transcribedEpisodes ?? []).map((ep) => ep.title));
+        // Match transcribed episodes to feed items by feedItemId, falling back
+        // to title for episodes created before feedItemId was tracked.
+        const episodeByItemId = new Map<string, TranscribedEpisode>();
+        const episodeByTitle = new Map<string, TranscribedEpisode>();
+        for (const ep of transcribedEpisodes ?? []) {
+          if (ep.feedItemId && !episodeByItemId.has(ep.feedItemId)) {
+            episodeByItemId.set(ep.feedItemId, ep);
+          }
+          if (!episodeByTitle.has(ep.title)) episodeByTitle.set(ep.title, ep);
+        }
 
         return (
           <div className="divide-y divide-zinc-100 dark:divide-zinc-800/60">
@@ -175,8 +235,8 @@ export function FeedDetail({ slug }: { slug: string }) {
                   })
                 : null;
 
-              const isTranscribed = transcribedTitles.has(ep.title);
               const isArticle = ep.kind === "article";
+              const transcribed = episodeByItemId.get(ep._id) ?? episodeByTitle.get(ep.title);
 
               const transcribeParams = new URLSearchParams();
               if (ep.title) transcribeParams.set("title", ep.title);
@@ -225,18 +285,19 @@ export function FeedDetail({ slug }: { slug: string }) {
                       Read
                     </a>
                   )}
-                  {!isArticle && ep.audioUrl && (
-                    <Link
-                      href={`/upload?${transcribeParams.toString()}`}
-                      className={`shrink-0 rounded-md px-2.5 py-1 text-xs font-medium transition-all active:scale-95 ${
-                        isTranscribed
-                          ? "border border-amber-400/60 text-amber-600 hover:bg-amber-50 dark:border-amber-500/40 dark:text-amber-400 dark:hover:bg-amber-950/30"
-                          : "bg-amber-500 text-white hover:bg-amber-400"
-                      }`}
-                    >
-                      Transcribe
-                    </Link>
-                  )}
+                  {!isArticle &&
+                    (transcribed ? (
+                      <EpisodeActionLink episode={transcribed} />
+                    ) : (
+                      ep.audioUrl && (
+                        <Link
+                          href={`/upload?${transcribeParams.toString()}`}
+                          className={`${actionLinkBase} bg-amber-500 text-white hover:bg-amber-400`}
+                        >
+                          Transcribe
+                        </Link>
+                      )
+                    ))}
                 </div>
               );
             })}
