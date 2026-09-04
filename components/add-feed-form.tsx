@@ -4,12 +4,15 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useMutation, useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
+import { fetchFeed, syncFeedItems } from "@/lib/feed";
 
 export function AddFeedForm() {
   const router = useRouter();
   const createFeed = useMutation(api.feeds.create);
+  const upsertItems = useMutation(api.feeds.upsertItems);
   const [url, setUrl] = useState("");
   const [loading, setLoading] = useState(false);
+  const [progress, setProgress] = useState<{ saved: number; total: number } | null>(null);
   const [error, setError] = useState("");
 
   // Check for existing feed with this URL
@@ -29,33 +32,26 @@ export function AddFeedForm() {
     setError("");
 
     try {
-      const res = await fetch("/api/feed", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ url: normalizedUrl }),
-      });
+      const feed = await fetchFeed(normalizedUrl);
 
-      if (!res.ok) {
-        const data = await res.json();
-        throw new Error(data.error || "Failed to fetch feed");
-      }
-
-      const feed = await res.json();
-
-      const result = await createFeed({
+      const { slug, id } = await createFeed({
         feedUrl: normalizedUrl,
         title: feed.title,
         description: feed.description || undefined,
         imageUrl: feed.imageUrl || undefined,
-        episodes: feed.episodes,
       });
-      const { slug } = result as { slug: string };
+
+      setProgress({ saved: 0, total: feed.episodes.length });
+      await syncFeedItems(upsertItems, id, feed.episodes, (saved, total) =>
+        setProgress({ saved, total }),
+      );
 
       router.push(`/feeds/${slug}`);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Something went wrong");
     } finally {
       setLoading(false);
+      setProgress(null);
     }
   };
 
@@ -78,7 +74,7 @@ export function AddFeedForm() {
         />
       </div>
 
-      {existingFeed && (
+      {existingFeed && !loading && (
         <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-700 dark:border-amber-900/50 dark:bg-amber-950/20 dark:text-amber-400">
           This feed has already been added.{" "}
           <a
@@ -104,7 +100,9 @@ export function AddFeedForm() {
         {loading ? (
           <span className="inline-flex items-center gap-2">
             <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-white" />
-            Fetching feed...
+            {progress
+              ? `Saving episodes… ${progress.saved} / ${progress.total}`
+              : "Fetching feed..."}
           </span>
         ) : (
           "Add Feed"

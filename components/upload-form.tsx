@@ -1,8 +1,8 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useMutation } from "convex/react";
+import { useMutation, useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import type { ASRModel } from "@/lib/transcribe";
 import type { Id } from "@/convex/_generated/dataModel";
@@ -47,6 +47,18 @@ export function UploadForm() {
   const pubDate = searchParams.get("pubDate") ? Number(searchParams.get("pubDate")) : undefined;
   const imageUrl = searchParams.get("imageUrl") || undefined;
   const feedItemId = searchParams.get("feedItemId") as Id<"feedItems"> | undefined;
+
+  // Feed pages link here with just a feedItemId (show notes can be several KB,
+  // too long for a URL), so pull the description from the feed item itself.
+  const feedItem = useQuery(
+    api.feeds.getItem,
+    feedItemId && !searchParams.get("description") ? { id: feedItemId } : "skip",
+  );
+  useEffect(() => {
+    if (feedItem?.description) {
+      setDescription((current) => current || feedItem.description);
+    }
+  }, [feedItem]);
 
   const canSubmit = !loading && (sourceMode === "url" ? url.trim() !== "" : file !== null);
 

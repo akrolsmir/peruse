@@ -51,13 +51,31 @@ export const getByFeedUrl = query({
   },
 });
 
+// Slim projection: descriptions (show notes) can be several KB each and
+// aren't needed for the list. Fetch them per-item with getItem instead.
 export const listItems = query({
   args: { feedId: v.id("feeds") },
   handler: async (ctx, args) => {
-    return await ctx.db
+    const items = await ctx.db
       .query("feedItems")
       .withIndex("by_feedId", (q) => q.eq("feedId", args.feedId))
       .collect();
+    return items.map((item) => ({
+      _id: item._id,
+      guid: item.guid,
+      title: item.title,
+      audioUrl: item.audioUrl,
+      imageUrl: item.imageUrl,
+      pubDate: item.pubDate,
+      duration: item.duration,
+    }));
+  },
+});
+
+export const getItem = query({
+  args: { id: v.id("feedItems") },
+  handler: async (ctx, args) => {
+    return await ctx.db.get(args.id);
   },
 });
 
@@ -67,7 +85,6 @@ export const create = mutation({
     title: v.string(),
     description: v.optional(v.string()),
     imageUrl: v.optional(v.string()),
-    episodes: v.array(feedEpisodeValidator),
   },
   handler: async (ctx, args) => {
     const slug = await uniqueSlug(ctx.db, "feeds", args.title);
@@ -78,33 +95,30 @@ export const create = mutation({
       description: args.description,
       imageUrl: args.imageUrl,
       slug,
-      episodeCount: args.episodes.length,
+      episodeCount: 0,
       lastFetchedAt: now,
       createdAt: now,
     });
-
-    for (const ep of args.episodes) {
-      await ctx.db.insert("feedItems", { feedId: id, ...ep });
-    }
-
     return { id, slug };
   },
 });
 
-export const refreshItems = mutation({
+// Upserts one batch of items by guid. Callers split large feeds into batches
+// (see lib/feed.ts) so no single mutation approaches Convex's per-transaction
+// limits, and existing items are looked up via index rather than loaded in full.
+// episodeCount is tracked incrementally so we never have to count all items.
+export const upsertItems = mutation({
   args: {
     id: v.id("feeds"),
     episodes: v.array(feedEpisodeValidator),
   },
   handler: async (ctx, args) => {
-    const existing = await ctx.db
-      .query("feedItems")
-      .withIndex("by_feedId", (q) => q.eq("feedId", args.id))
-      .collect();
-    const existingByGuid = new Map(existing.map((item) => [item.guid, item]));
-
+    let inserted = 0;
     for (const ep of args.episodes) {
-      const match = existingByGuid.get(ep.guid);
+      const match = await ctx.db
+        .query("feedItems")
+        .withIndex("by_feedId_guid", (q) => q.eq("feedId", args.id).eq("guid", ep.guid))
+        .first();
       if (match) {
         await ctx.db.patch(match._id, {
           title: ep.title,
@@ -114,21 +128,19 @@ export const refreshItems = mutation({
           pubDate: ep.pubDate,
           duration: ep.duration,
         });
-        existingByGuid.delete(ep.guid);
       } else {
         await ctx.db.insert("feedItems", { feedId: args.id, ...ep });
+        inserted++;
       }
     }
 
-    // Recount — we don't delete old items (feeds may truncate their RSS)
-    const allItems = await ctx.db
-      .query("feedItems")
-      .withIndex("by_feedId", (q) => q.eq("feedId", args.id))
-      .collect();
-
+    // We never delete old items (feeds may truncate their RSS), so the count only grows.
+    const feed = await ctx.db.get(args.id);
+    if (!feed) throw new Error("Feed not found");
     await ctx.db.patch(args.id, {
-      episodeCount: allItems.length,
+      episodeCount: feed.episodeCount + inserted,
       lastFetchedAt: Date.now(),
     });
+    return { inserted };
   },
 });

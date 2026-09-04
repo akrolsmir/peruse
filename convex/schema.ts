@@ -56,5 +56,7 @@ export default defineSchema({
     imageUrl: v.optional(v.string()),
     pubDate: v.string(),
     duration: v.string(),
-  }).index("by_feedId", ["feedId"]),
+  })
+    .index("by_feedId", ["feedId"])
+    .index("by_feedId_guid", ["feedId", "guid"]),
 });

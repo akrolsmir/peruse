@@ -6,6 +6,7 @@ import { useQuery, useMutation } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
 import { EpisodeCard } from "@/components/episode-card";
+import { fetchFeed, syncFeedItems } from "@/lib/feed";
 
 function formatDuration(raw: string): string {
   if (!raw) return "";
@@ -34,8 +35,9 @@ export function FeedDetail({ slug }: { slug: string }) {
     api.episodes.listByFeed,
     feed?._id ? { feedId: feed._id } : "skip",
   );
-  const refreshItems = useMutation(api.feeds.refreshItems);
+  const upsertItems = useMutation(api.feeds.upsertItems);
   const [refreshing, setRefreshing] = useState(false);
+  const [progress, setProgress] = useState<{ saved: number; total: number } | null>(null);
 
   if (feed === undefined) {
     return (
@@ -60,21 +62,16 @@ export function FeedDetail({ slug }: { slug: string }) {
   const handleRefresh = async () => {
     setRefreshing(true);
     try {
-      const res = await fetch("/api/feed", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ url: feed.feedUrl }),
-      });
-      if (!res.ok) throw new Error("Failed to refresh feed");
-      const data = await res.json();
-      await refreshItems({
-        id: feed._id as Id<"feeds">,
-        episodes: data.episodes,
-      });
+      const data = await fetchFeed(feed.feedUrl);
+      setProgress({ saved: 0, total: data.episodes.length });
+      await syncFeedItems(upsertItems, feed._id as Id<"feeds">, data.episodes, (saved, total) =>
+        setProgress({ saved, total }),
+      );
     } catch {
       // Silently fail — user can try again
     } finally {
       setRefreshing(false);
+      setProgress(null);
     }
   };
 
@@ -141,7 +138,11 @@ export function FeedDetail({ slug }: { slug: string }) {
             <path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8" />
             <path d="M21 3v5h-5" />
           </svg>
-          {refreshing ? "Refreshing..." : "Refresh"}
+          {refreshing
+            ? progress
+              ? `Saving ${progress.saved} / ${progress.total}`
+              : "Refreshing..."
+            : "Refresh"}
         </button>
       </div>
 
@@ -164,7 +165,6 @@ export function FeedDetail({ slug }: { slug: string }) {
               const transcribeParams = new URLSearchParams();
               if (ep.title) transcribeParams.set("title", ep.title);
               if (ep.audioUrl) transcribeParams.set("url", ep.audioUrl);
-              if (ep.description) transcribeParams.set("description", ep.description);
               const epImageUrl = ep.imageUrl || feed.imageUrl;
               if (epImageUrl) transcribeParams.set("imageUrl", epImageUrl);
               if (ep.pubDate)
