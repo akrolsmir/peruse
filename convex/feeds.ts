@@ -10,6 +10,8 @@ const feedEpisodeValidator = v.object({
   imageUrl: v.optional(v.string()),
   pubDate: v.string(),
   duration: v.string(),
+  kind: v.optional(v.union(v.literal("audio"), v.literal("article"))),
+  link: v.optional(v.string()),
 });
 
 export const list = query({
@@ -68,6 +70,8 @@ export const listItems = query({
       imageUrl: item.imageUrl,
       pubDate: item.pubDate,
       duration: item.duration,
+      kind: item.kind,
+      link: item.link,
     }));
   },
 });
@@ -87,6 +91,14 @@ export const create = mutation({
     imageUrl: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
+    // The client may have resolved a site URL to its feed URL, so a feed can
+    // already exist even if the form's pre-check on the typed URL found nothing.
+    const existing = await ctx.db
+      .query("feeds")
+      .withIndex("by_feedUrl", (q) => q.eq("feedUrl", args.feedUrl))
+      .first();
+    if (existing) return { id: existing._id, slug: existing.slug };
+
     const slug = await uniqueSlug(ctx.db, "feeds", args.title);
     const now = Date.now();
     const id = await ctx.db.insert("feeds", {
@@ -127,10 +139,13 @@ export const upsertItems = mutation({
           imageUrl: ep.imageUrl,
           pubDate: ep.pubDate,
           duration: ep.duration,
+          kind: ep.kind,
+          link: ep.link,
         });
       } else {
         await ctx.db.insert("feedItems", { feedId: args.id, ...ep });
-        inserted++;
+        // episodeCount only tracks transcribable items; articles are counted client-side.
+        if (ep.kind !== "article") inserted++;
       }
     }
 

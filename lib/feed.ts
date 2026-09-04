@@ -8,9 +8,14 @@ export type FeedEpisode = {
   imageUrl?: string;
   pubDate: string;
   duration: string;
+  // "audio" items can be transcribed; "article" items only link out to the original post.
+  kind: "audio" | "article";
+  link?: string;
 };
 
 export type ParsedFeed = {
+  // The resolved feed URL, which may differ from what the user typed (e.g. a site URL).
+  feedUrl: string;
   title: string;
   description: string;
   imageUrl: string;

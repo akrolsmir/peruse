@@ -38,6 +38,7 @@ export function FeedDetail({ slug }: { slug: string }) {
   const upsertItems = useMutation(api.feeds.upsertItems);
   const [refreshing, setRefreshing] = useState(false);
   const [progress, setProgress] = useState<{ saved: number; total: number } | null>(null);
+  const [showArticles, setShowArticles] = useState(false);
 
   if (feed === undefined) {
     return (
@@ -75,9 +76,13 @@ export function FeedDetail({ slug }: { slug: string }) {
     }
   };
 
-  const episodes = [...(feedItems ?? [])].sort(
-    (a, b) => new Date(b.pubDate).getTime() - new Date(a.pubDate).getTime(),
-  );
+  // Items without audio (newsletter posts, video-only posts) are hidden by default
+  // and only link out to the original; older items predate `kind` and are audio.
+  const allItems = feedItems ?? [];
+  const articleCount = allItems.filter((item) => item.kind === "article").length;
+  const episodes = allItems
+    .filter((item) => showArticles || item.kind !== "article")
+    .sort((a, b) => new Date(b.pubDate).getTime() - new Date(a.pubDate).getTime());
 
   return (
     <div>
@@ -111,39 +116,49 @@ export function FeedDetail({ slug }: { slug: string }) {
       )}
 
       {/* Actions */}
-      <div className="mb-6 flex items-center justify-between">
+      <div className="mb-6 flex items-center justify-between gap-3">
         <h2 className="text-xs font-semibold uppercase tracking-widest text-zinc-400">
           {feed.episodeCount} episode{feed.episodeCount !== 1 ? "s" : ""}
         </h2>
-        <button
-          onClick={handleRefresh}
-          disabled={refreshing}
-          className={`inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium transition-all active:scale-95 disabled:opacity-50 ${
-            isStale
-              ? "bg-amber-100 text-amber-700 hover:bg-amber-200 dark:bg-amber-900/30 dark:text-amber-400 dark:hover:bg-amber-900/50"
-              : "bg-zinc-100 text-zinc-600 hover:bg-zinc-200 dark:bg-zinc-800 dark:text-zinc-400 dark:hover:bg-zinc-700"
-          }`}
-        >
-          <svg
-            width="12"
-            height="12"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2.5"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            className={refreshing ? "animate-spin" : ""}
+        <div className="flex items-center gap-2">
+          {articleCount > 0 && (
+            <button
+              onClick={() => setShowArticles((v) => !v)}
+              className="rounded-lg px-3 py-1.5 text-xs font-medium text-zinc-500 transition-all hover:bg-zinc-100 active:scale-95 dark:text-zinc-400 dark:hover:bg-zinc-800"
+            >
+              {showArticles ? "Hide" : "Show"} {articleCount} article{articleCount !== 1 ? "s" : ""}
+            </button>
+          )}
+          <button
+            onClick={handleRefresh}
+            disabled={refreshing}
+            className={`inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium transition-all active:scale-95 disabled:opacity-50 ${
+              isStale
+                ? "bg-amber-100 text-amber-700 hover:bg-amber-200 dark:bg-amber-900/30 dark:text-amber-400 dark:hover:bg-amber-900/50"
+                : "bg-zinc-100 text-zinc-600 hover:bg-zinc-200 dark:bg-zinc-800 dark:text-zinc-400 dark:hover:bg-zinc-700"
+            }`}
           >
-            <path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8" />
-            <path d="M21 3v5h-5" />
-          </svg>
-          {refreshing
-            ? progress
-              ? `Saving ${progress.saved} / ${progress.total}`
-              : "Refreshing..."
-            : "Refresh"}
-        </button>
+            <svg
+              width="12"
+              height="12"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2.5"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              className={refreshing ? "animate-spin" : ""}
+            >
+              <path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8" />
+              <path d="M21 3v5h-5" />
+            </svg>
+            {refreshing
+              ? progress
+                ? `Saving ${progress.saved} / ${progress.total}`
+                : "Refreshing..."
+              : "Refresh"}
+          </button>
+        </div>
       </div>
 
       {/* Episode list */}
@@ -161,6 +176,7 @@ export function FeedDetail({ slug }: { slug: string }) {
                 : null;
 
               const isTranscribed = transcribedTitles.has(ep.title);
+              const isArticle = ep.kind === "article";
 
               const transcribeParams = new URLSearchParams();
               if (ep.title) transcribeParams.set("title", ep.title);
@@ -177,9 +193,20 @@ export function FeedDetail({ slug }: { slug: string }) {
                   key={ep._id}
                   className="flex items-center gap-3 py-2.5 transition-colors hover:bg-zinc-50/60 dark:hover:bg-zinc-900/40"
                 >
-                  <h3 className="min-w-0 flex-1 truncate text-sm text-zinc-800 dark:text-zinc-200">
+                  <h3
+                    className={`min-w-0 flex-1 truncate text-sm ${
+                      isArticle
+                        ? "text-zinc-400 dark:text-zinc-500"
+                        : "text-zinc-800 dark:text-zinc-200"
+                    }`}
+                  >
                     {ep.title}
                   </h3>
+                  {isArticle && (
+                    <span className="shrink-0 rounded px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wider text-zinc-400 ring-1 ring-zinc-200 dark:text-zinc-500 dark:ring-zinc-800">
+                      Article
+                    </span>
+                  )}
                   <span className="shrink-0 text-xs tabular-nums text-zinc-300 dark:text-zinc-600">
                     {ep.duration ? formatDuration(ep.duration) : ""}
                   </span>
@@ -188,7 +215,17 @@ export function FeedDetail({ slug }: { slug: string }) {
                       {pubDate}
                     </time>
                   )}
-                  {ep.audioUrl && (
+                  {isArticle && ep.link && (
+                    <a
+                      href={ep.link}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="shrink-0 rounded-md border border-zinc-200 px-2.5 py-1 text-xs font-medium text-zinc-500 transition-all hover:bg-zinc-100 active:scale-95 dark:border-zinc-800 dark:text-zinc-400 dark:hover:bg-zinc-800"
+                    >
+                      Read
+                    </a>
+                  )}
+                  {!isArticle && ep.audioUrl && (
                     <Link
                       href={`/upload?${transcribeParams.toString()}`}
                       className={`shrink-0 rounded-md px-2.5 py-1 text-xs font-medium transition-all active:scale-95 ${

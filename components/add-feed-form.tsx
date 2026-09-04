@@ -35,7 +35,7 @@ export function AddFeedForm() {
       const feed = await fetchFeed(normalizedUrl);
 
       const { slug, id } = await createFeed({
-        feedUrl: normalizedUrl,
+        feedUrl: feed.feedUrl,
         title: feed.title,
         description: feed.description || undefined,
         imageUrl: feed.imageUrl || undefined,
@@ -62,14 +62,14 @@ export function AddFeedForm() {
           htmlFor="feedUrl"
           className="mb-2 block text-xs font-semibold uppercase tracking-widest text-zinc-400"
         >
-          RSS Feed URL
+          Feed or site URL
         </label>
         <input
           id="feedUrl"
           type="url"
           value={url}
           onChange={(e) => setUrl(e.target.value)}
-          placeholder="https://feeds.example.com/podcast.xml"
+          placeholder="https://feeds.example.com/podcast.xml or https://example.substack.com"
           className="w-full rounded-xl border border-zinc-200 bg-white px-4 py-3 text-sm text-zinc-900 placeholder:text-zinc-300 transition-colors focus:border-amber-500 focus:outline-none focus:ring-1 focus:ring-amber-500/20 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-100 dark:placeholder:text-zinc-600"
         />
       </div>

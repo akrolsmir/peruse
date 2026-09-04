@@ -56,6 +56,10 @@ export default defineSchema({
     imageUrl: v.optional(v.string()),
     pubDate: v.string(),
     duration: v.string(),
+    // "audio" (default when absent) is transcribable; "article" is a text/video
+    // post with no audio enclosure, kept so the feed page can link to the original.
+    kind: v.optional(v.union(v.literal("audio"), v.literal("article"))),
+    link: v.optional(v.string()),
   })
     .index("by_feedId", ["feedId"])
     .index("by_feedId_guid", ["feedId", "guid"]),
