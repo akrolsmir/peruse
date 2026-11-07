@@ -11,23 +11,26 @@ const models: { value: ASRModel; label: string; description: string }[] = [
   {
     value: "mai-transcribe-2",
     label: "MAI-Transcribe-2",
-    description: "Microsoft's model via OpenRouter — lowest error rate, fast, speaker diarization",
+    description:
+      "Lowest error rate, fast, speaker diarization. Audio over ~37MB fails (OpenRouter limit)",
   },
   {
     value: "whisperx",
     label: "WhisperX Large v3",
     description: "Word-level timestamps with speaker diarization",
   },
-  {
-    value: "whisper",
-    label: "Whisper Large v3",
-    description: "Fast, reliable, handles long files well",
-  },
-  {
-    value: "canary-qwen",
-    label: "Canary-Qwen 2.5B",
-    description: "Lower word error rate, may struggle with long files",
-  },
+  // Whisper and Canary-Qwen are still valid ASRModel values (and still work for
+  // retries of old episodes); they're just hidden from the picker.
+  // {
+  //   value: "whisper",
+  //   label: "Whisper Large v3",
+  //   description: "Fast, reliable, handles long files well",
+  // },
+  // {
+  //   value: "canary-qwen",
+  //   label: "Canary-Qwen 2.5B",
+  //   description: "Lower word error rate, may struggle with long files",
+  // },
 ];
 
 type SourceMode = "url" | "file";
@@ -43,7 +46,7 @@ export function UploadForm() {
   const [file, setFile] = useState<File | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [title, setTitle] = useState(searchParams.get("title") || "");
-  const [model, setModel] = useState<ASRModel>("whisperx");
+  const [model, setModel] = useState<ASRModel>("mai-transcribe-2");
   const [minSpeakers, setMinSpeakers] = useState(2);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -261,7 +264,6 @@ export function UploadForm() {
         </div>
       )}
 
-      {/* Model selector — hidden, always using whisperx
       <fieldset>
         <legend className="mb-3 block text-xs font-semibold uppercase tracking-widest text-zinc-400">
           Transcription Model
@@ -301,25 +303,26 @@ export function UploadForm() {
           ))}
         </div>
       </fieldset>
-      */}
 
-      <div>
-        <label
-          htmlFor="minSpeakers"
-          className="mb-2 block text-xs font-semibold uppercase tracking-widest text-zinc-400"
-        >
-          Number of Speakers
-        </label>
-        <input
-          id="minSpeakers"
-          type="number"
-          min={1}
-          max={20}
-          value={minSpeakers}
-          onChange={(e) => setMinSpeakers(Math.max(1, parseInt(e.target.value) || 1))}
-          className="w-24 rounded-xl border border-zinc-200 bg-white px-4 py-3 text-sm text-zinc-900 transition-colors focus:border-amber-500 focus:outline-none focus:ring-1 focus:ring-amber-500/20 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-100"
-        />
-      </div>
+      {model === "whisperx" && (
+        <div>
+          <label
+            htmlFor="minSpeakers"
+            className="mb-2 block text-xs font-semibold uppercase tracking-widest text-zinc-400"
+          >
+            Number of Speakers
+          </label>
+          <input
+            id="minSpeakers"
+            type="number"
+            min={1}
+            max={20}
+            value={minSpeakers}
+            onChange={(e) => setMinSpeakers(Math.max(1, parseInt(e.target.value) || 1))}
+            className="w-24 rounded-xl border border-zinc-200 bg-white px-4 py-3 text-sm text-zinc-900 transition-colors focus:border-amber-500 focus:outline-none focus:ring-1 focus:ring-amber-500/20 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-100"
+          />
+        </div>
+      )}
 
       {error && (
         <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-red-900/50 dark:bg-red-950/20 dark:text-red-400">
