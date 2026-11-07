@@ -9,6 +9,11 @@ import type { Id } from "@/convex/_generated/dataModel";
 
 const models: { value: ASRModel; label: string; description: string }[] = [
   {
+    value: "mai-transcribe-2",
+    label: "MAI-Transcribe-2",
+    description: "Microsoft's model via OpenRouter — lowest error rate, fast, speaker diarization",
+  },
+  {
     value: "whisperx",
     label: "WhisperX Large v3",
     description: "Word-level timestamps with speaker diarization",

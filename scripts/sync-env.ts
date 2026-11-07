@@ -2,7 +2,12 @@
 
 // Reads API keys from .env.local (auto-loaded by Bun) and sets them as Convex environment variables.
 
-const ENV_KEYS = ["REPLICATE_API_TOKEN", "ANTHROPIC_API_KEY", "HUGGINGFACE_API_KEY"];
+const ENV_KEYS = [
+  "REPLICATE_API_TOKEN",
+  "ANTHROPIC_API_KEY",
+  "HUGGINGFACE_API_KEY",
+  "OPENROUTER_API_KEY",
+];
 
 for (const key of ENV_KEYS) {
   const value = process.env[key];

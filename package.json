@@ -16,6 +16,7 @@
   "dependencies": {
     "@anthropic-ai/sdk": "^0.78.0",
     "convex": "^1.32.0",
+    "diff": "^9.0.0",
     "lucide-react": "^0.576.0",
     "micromark": "^4.0.2",
     "next": "16.1.6",

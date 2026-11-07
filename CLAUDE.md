@@ -27,12 +27,12 @@ No test suite is configured.
 - `app/` — Next.js app router pages and API routes
 - `app/api/process/route.ts` — main transcription pipeline
 - `app/api/reprocess/route.ts` — re-run Claude post-processing only
-- `lib/transcribe.ts` — ASR providers (Whisper, Canary-Qwen, WhisperX)
+- `lib/transcribe.ts` — ASR providers (Whisper, Canary-Qwen, WhisperX, MAI-Transcribe-2 via OpenRouter)
 - `lib/postprocess.ts` — Claude structured output for transcript cleaning and summarization
 - `convex/` — database schema and mutations/queries
 - `components/` — React components with real-time Convex subscriptions
 
-**ASR providers** (in `lib/transcribe.ts`): Three implementations of the `ASRProvider` interface — WhisperASR (default, fast), CanaryQwenASR (lower WER, slower), WhisperXASR (speaker diarization).
+**ASR providers** (in `lib/transcribe.ts`): Four implementations of the `ASRProvider` interface — WhisperASR (fast), CanaryQwenASR (lower WER, slower), WhisperXASR (speaker diarization; current UI default), MAITranscribeASR (Microsoft MAI-Transcribe-2 via OpenRouter: lowest WER, diarization, but audio must be inlined and is capped at ~37MB).
 
 **Post-processing** (in `lib/postprocess.ts`): Uses Claude Sonnet with JSON schema structured outputs. Chunks transcripts into ~60-second segments for parallel processing, then generates summary + chapters.
 
@@ -47,3 +47,4 @@ Required in `.env.local`:
 - `NEXT_PUBLIC_CONVEX_URL` — Convex frontend URL (public)
 - `CONVEX_DEPLOYMENT` — Convex deployment identifier
 - `HUGGINGFACE_API_KEY` — needed for WhisperX diarization
+- `OPENROUTER_API_KEY` — needed for MAI-Transcribe-2
